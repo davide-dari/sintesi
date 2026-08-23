@@ -1,0 +1,5 @@
+{
+  "name": "Ricetta Facile",
+  "description": "Un'applicazione semplice e intuitiva per gestire e inviare richieste di ricette mediche al proprio dottore.",
+  "requestFramePermissions": []
+}

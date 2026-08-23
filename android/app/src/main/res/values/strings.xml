@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Ricetta Facile</string>
+    <string name="title_activity_main">Ricetta Facile</string>
+    <string name="package_name">com.ricettafacile.app</string>
+    <string name="custom_url_scheme">com.ricettafacile.app</string>
+</resources>
