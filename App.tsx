@@ -450,7 +450,7 @@ const App: React.FC = () => {
   // --- INTRO USER SCREEN ---
   if (currentScreen === Screen.INTRO_USER) {
     return (
-      <div className="h-[100dvh] bg-teal-50 max-w-md mx-auto shadow-2xl flex flex-col items-center justify-center p-6 relative overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] screen-enter">
+      <div className="h-[100dvh] bg-teal-50 flex flex-col items-center justify-center p-6 relative overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] screen-enter">
         <div className="z-10 flex flex-col items-center text-center space-y-6">
            <div className="bg-white p-6 rounded-full shadow-lg mb-2">
              <User size={64} className="text-teal-600" />
@@ -479,7 +479,7 @@ const App: React.FC = () => {
   // --- INTRO DOCTOR SCREEN ---
   if (currentScreen === Screen.INTRO_DOCTOR) {
     return (
-      <div className="h-[100dvh] bg-blue-50 max-w-md mx-auto shadow-2xl flex flex-col items-center justify-center p-6 relative overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] screen-enter">
+      <div className="h-[100dvh] bg-blue-50 flex flex-col items-center justify-center p-6 relative overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] screen-enter">
         <div className="z-10 flex flex-col items-center text-center space-y-6">
            <div className="bg-white p-6 rounded-full shadow-lg mb-2">
              <Stethoscope size={64} className="text-blue-600" />
@@ -514,7 +514,7 @@ const App: React.FC = () => {
 
   if (currentScreen === Screen.MENU) {
     return (
-      <div className="h-[100dvh] bg-gray-50 max-w-md mx-auto shadow-xl bg-white flex flex-col relative overflow-hidden landscape:h-auto landscape:overflow-visible screen-enter">
+      <div className="h-[100dvh] bg-white flex flex-col relative overflow-hidden screen-enter">
         <div className="pt-[calc(2rem+env(safe-area-inset-top))] pb-4 px-5 bg-white shrink-0 z-10 border-b border-gray-100">
            <div className="flex justify-between items-center">
               <h1 className="text-2xl font-bold text-gray-900">Impostazioni</h1>
@@ -565,14 +565,14 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        <div className="px-5 pt-2 bg-white shrink-0 z-30 pb-[calc(3rem+env(safe-area-inset-bottom))] landscape:static landscape:pb-8 landscape:pt-4">
+        <div className="px-5 pt-2 bg-white shrink-0 z-30 pb-[calc(3rem+env(safe-area-inset-bottom))]">
           <Button fullWidth onClick={goBack} variant="secondary">Torna alla Home</Button>
         </div>
 
         {/* BACKUP MODAL */}
         {backupMode !== 'none' && (
           <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-6 animate-fade-in backdrop-blur-sm">
-             <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl relative">
+              <div className="bg-white w-full rounded-3xl p-6 shadow-2xl relative">
                 <button onClick={() => setBackupMode('none')} className="absolute top-4 right-4 p-2 bg-gray-100 rounded-full"><X size={20}/></button>
                 
                 {backupMode === 'export' ? (
@@ -1158,10 +1158,10 @@ const App: React.FC = () => {
           <div ref={medsEndRef} />
         </div>
         
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 z-30 pb-[calc(3rem+env(safe-area-inset-bottom))] flex justify-center landscape:static landscape:pb-8 landscape:pt-4">
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 z-30 pb-[calc(3rem+env(safe-area-inset-bottom))] flex justify-center">
             <button 
               onClick={handleCompleteRegistration} 
-              className="w-full max-w-md px-8 py-4 bg-teal-600 text-white font-bold text-xl rounded-xl shadow-lg flex items-center justify-center gap-3 active:scale-95 transition-transform"
+              className="w-full px-8 py-4 bg-teal-600 text-white font-bold text-xl rounded-xl shadow-lg flex items-center justify-center gap-3 active:scale-95 transition-transform"
             >
               <CheckCircle2 size={28} /> Salva e Esci
             </button>
@@ -1175,7 +1175,7 @@ const App: React.FC = () => {
     const studioStatus = getStudioStatus();
 
     return (
-      <div className="h-[100dvh] bg-gray-50 max-w-md mx-auto shadow-xl bg-white flex flex-col relative overflow-hidden landscape:h-auto landscape:overflow-y-auto landscape:min-h-screen screen-enter">
+      <div className="h-[100dvh] bg-gray-50 flex flex-col relative overflow-hidden screen-enter">
         
         <div className="bg-teal-700 text-white rounded-b-[3rem] shadow-lg pt-[calc(1.5rem+env(safe-area-inset-top))] pb-12 landscape:pb-16 flex flex-col px-4 shrink-0 z-10 relative overflow-hidden">
             <div className="absolute inset-0 opacity-10 pointer-events-none">
@@ -1250,8 +1250,8 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        <div className="fixed bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-100 z-30 pb-[calc(3rem+env(safe-area-inset-bottom))] flex justify-center landscape:static landscape:bg-transparent landscape:border-none landscape:pt-0 landscape:pb-8">
-          <div className="w-full max-w-md">
+        <div className="fixed bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-100 z-30 pb-[calc(3rem+env(safe-area-inset-bottom))] flex justify-center">
+          <div className="w-full">
             <Button 
               fullWidth 
               onClick={() => goToScreen(Screen.SELECTION)} 
@@ -1333,7 +1333,7 @@ const App: React.FC = () => {
 
         {showCallMenu && (
           <div className="fixed inset-0 bg-black/60 z-50 flex items-end justify-center p-4" onClick={() => setShowCallMenu(false)}>
-            <div className="bg-white rounded-3xl p-6 w-full max-w-md animate-slide-up shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="bg-white rounded-3xl p-6 w-full animate-slide-up shadow-2xl" onClick={e => e.stopPropagation()}>
               <div className="flex justify-between items-center mb-6">
                  <h3 className="text-2xl font-bold text-gray-900">Chiama Ora</h3>
                  <button onClick={() => setShowCallMenu(false)} className="bg-gray-100 p-2 rounded-full"><X size={24}/></button>
@@ -1382,8 +1382,8 @@ const App: React.FC = () => {
              })
            )}
         </div>
-        <div className="fixed bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-100 z-40 pb-[calc(3rem+env(safe-area-inset-bottom))] flex justify-center landscape:static landscape:pb-8 landscape:pt-4">
-            <button onClick={handleSendClick} disabled={selectedMeds.size === 0} className={`w-full max-w-md bg-teal-600 text-white font-bold text-xl py-4 rounded-xl shadow-lg flex items-center justify-center gap-3 ${selectedMeds.size === 0 ? 'opacity-50 grayscale cursor-not-allowed' : 'active:scale-95 shadow-teal-200'} transition-all`}>
+        <div className="fixed bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-100 z-40 pb-[calc(3rem+env(safe-area-inset-bottom))] flex justify-center">
+            <button onClick={handleSendClick} disabled={selectedMeds.size === 0} className={`w-full bg-teal-600 text-white font-bold text-xl py-4 rounded-xl shadow-lg flex items-center justify-center gap-3 ${selectedMeds.size === 0 ? 'opacity-50 grayscale cursor-not-allowed' : 'active:scale-95 shadow-teal-200'} transition-all`}>
               <Send size={24} /> Invia Ora
             </button>
         </div>

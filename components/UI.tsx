@@ -40,9 +40,8 @@ export const NavigationBar: React.FC<{
   onNext?: () => void; 
   nextDisabled?: boolean;
 }> = ({ onBack, onNext, nextDisabled }) => (
-  <div className="fixed bottom-0 left-0 right-0 z-20 flex justify-center bg-transparent pointer-events-none landscape:static landscape:bg-white landscape:pt-4">
-    {/* Added safe-area padding to the bottom */}
-    <div className="w-full max-w-md flex justify-between items-center px-4 pt-4 pb-[calc(2.5rem+env(safe-area-inset-bottom))] bg-white/90 backdrop-blur-sm border-t border-gray-100 pointer-events-auto landscape:bg-transparent landscape:border-none landscape:pb-4 landscape:pt-0">
+  <div className="fixed bottom-0 left-0 right-0 z-20 flex justify-center bg-transparent pointer-events-none">
+    <div className="w-full flex justify-between items-center px-4 pt-4 pb-[calc(2.5rem+env(safe-area-inset-bottom))] bg-white/90 backdrop-blur-sm border-t border-gray-100 pointer-events-auto">
       <div className="pointer-events-auto">
         {onBack && (
           <button 
@@ -95,9 +94,8 @@ export const ScreenLayout: React.FC<{
   children: React.ReactNode;
   headerAction?: React.ReactNode;
 }> = ({ title, subtitle, children, headerAction }) => (
-  <div className="min-h-screen bg-white flex flex-col max-w-md mx-auto shadow-xl overflow-hidden h-[100dvh] landscape:h-auto landscape:overflow-visible screen-enter">
-    {/* Added safe-area padding to the top header */}
-    <div className="pt-[calc(1.5rem+env(safe-area-inset-top))] pb-2 px-5 bg-white sticky top-0 z-10 border-b border-gray-50 shrink-0">
+  <div className="bg-white flex flex-col overflow-hidden h-[100dvh] screen-enter">
+    <div className="pt-[calc(1.5rem+env(safe-area-inset-top))] pb-2 px-5 bg-white shrink-0 z-10 border-b border-gray-50">
       <div className="flex justify-between items-start gap-4">
         <div>
            {title && <h1 className="text-2xl font-bold text-gray-900 leading-tight">{title}</h1>}
@@ -106,8 +104,7 @@ export const ScreenLayout: React.FC<{
         {headerAction && <div className="mt-1">{headerAction}</div>}
       </div>
     </div>
-    {/* Added safe-area padding to the bottom of content area */}
-    <div className="flex-1 px-5 py-4 overflow-y-auto no-scrollbar pb-[calc(8rem+env(safe-area-inset-bottom))] landscape:pb-[calc(1rem+env(safe-area-inset-bottom))] landscape:overflow-visible">
+    <div className="flex-1 px-5 py-4 overflow-y-auto no-scrollbar pb-[calc(8rem+env(safe-area-inset-bottom))] min-h-0">
       {children}
     </div>
   </div>
