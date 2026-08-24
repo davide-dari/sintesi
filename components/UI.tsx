@@ -41,7 +41,7 @@ export const NavigationBar: React.FC<{
   nextDisabled?: boolean;
 }> = ({ onBack, onNext, nextDisabled }) => (
   <div className="fixed bottom-0 left-0 right-0 z-20 flex justify-center bg-transparent pointer-events-none">
-    <div className="w-full flex justify-between items-center px-4 pt-4 pb-[calc(2.5rem+env(safe-area-inset-bottom))] bg-white/90 backdrop-blur-sm border-t border-gray-100 pointer-events-auto">
+    <div className="w-full flex justify-between items-center px-4 pt-4 bg-white/90 backdrop-blur-sm border-t border-gray-100 pointer-events-auto" style={{ paddingBottom: 'calc(2.5rem + var(--sab))' }}>
       <div className="pointer-events-auto">
         {onBack && (
           <button 
@@ -95,7 +95,7 @@ export const ScreenLayout: React.FC<{
   headerAction?: React.ReactNode;
 }> = ({ title, subtitle, children, headerAction }) => (
   <div className="bg-white flex flex-col overflow-hidden h-[100dvh] screen-enter">
-    <div className="pt-[calc(1.5rem+env(safe-area-inset-top))] pb-2 px-5 bg-white shrink-0 z-10 border-b border-gray-50">
+    <div className="pb-2 px-5 bg-white shrink-0 z-10 border-b border-gray-50" style={{ paddingTop: 'calc(1.5rem + var(--sat))' }}>
       <div className="flex justify-between items-start gap-4">
         <div>
            {title && <h1 className="text-2xl font-bold text-gray-900 leading-tight">{title}</h1>}
@@ -104,7 +104,7 @@ export const ScreenLayout: React.FC<{
         {headerAction && <div className="mt-1">{headerAction}</div>}
       </div>
     </div>
-    <div className="flex-1 px-5 py-4 overflow-y-auto no-scrollbar pb-[calc(8rem+env(safe-area-inset-bottom))] min-h-0">
+    <div className="flex-1 px-5 py-4 overflow-y-auto no-scrollbar min-h-0" style={{ paddingBottom: 'calc(8rem + var(--sab))' }}>
       {children}
     </div>
   </div>

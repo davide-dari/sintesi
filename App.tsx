@@ -96,6 +96,52 @@ const App: React.FC = () => {
     if (backupMode === 'none') setImportText('');
   }, [backupMode]);
 
+  // Detect safe area insets and set CSS variables (fallback for Android)
+  useEffect(() => {
+    const setSafeAreas = () => {
+      const root = document.documentElement;
+      // Try env() first via computed style on a test element
+      const test = document.createElement('div');
+      test.style.paddingTop = 'env(safe-area-inset-top)';
+      document.body.appendChild(test);
+      const envTop = getComputedStyle(test).paddingTop;
+      document.body.removeChild(test);
+
+      if (envTop && envTop !== '0px' && envTop !== '0') {
+        root.style.setProperty('--sat', envTop);
+      } else {
+        // Fallback: use visualViewport
+        const vp = window.visualViewport;
+        if (vp) {
+          root.style.setProperty('--sat', `${vp.offsetTop}px`);
+          root.style.setProperty('--sab', `${Math.max(0, window.innerHeight - vp.height - vp.offsetTop)}px`);
+        }
+      }
+
+      const testB = document.createElement('div');
+      testB.style.paddingBottom = 'env(safe-area-inset-bottom)';
+      document.body.appendChild(testB);
+      const envBottom = getComputedStyle(testB).paddingBottom;
+      document.body.removeChild(testB);
+
+      if (envBottom && envBottom !== '0px' && envBottom !== '0') {
+        root.style.setProperty('--sab', envBottom);
+      } else {
+        const vp = window.visualViewport;
+        if (vp) {
+          root.style.setProperty('--sab', `${Math.max(0, window.innerHeight - vp.height - vp.offsetTop)}px`);
+        }
+      }
+    };
+    setSafeAreas();
+    window.visualViewport?.addEventListener('resize', setSafeAreas);
+    window.visualViewport?.addEventListener('scroll', setSafeAreas);
+    return () => {
+      window.visualViewport?.removeEventListener('resize', setSafeAreas);
+      window.visualViewport?.removeEventListener('scroll', setSafeAreas);
+    };
+  }, []);
+
   const goToScreen = (screen: Screen) => {
     setRegStep(0); // Reset step on screen change
     window.history.pushState({ screen }, '');
@@ -450,7 +496,7 @@ const App: React.FC = () => {
   // --- INTRO USER SCREEN ---
   if (currentScreen === Screen.INTRO_USER) {
     return (
-      <div className="h-[100dvh] bg-teal-50 flex flex-col items-center justify-center p-6 relative overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] screen-enter">
+      <div className="h-[100dvh] bg-teal-50 flex flex-col items-center justify-center p-6 relative overflow-hidden screen-enter" style={{ paddingTop: 'var(--sat)', paddingBottom: 'var(--sab)' }}>
         <div className="z-10 flex flex-col items-center text-center space-y-6">
            <div className="bg-white p-6 rounded-full shadow-lg mb-2">
              <User size={64} className="text-teal-600" />
@@ -479,7 +525,7 @@ const App: React.FC = () => {
   // --- INTRO DOCTOR SCREEN ---
   if (currentScreen === Screen.INTRO_DOCTOR) {
     return (
-      <div className="h-[100dvh] bg-blue-50 flex flex-col items-center justify-center p-6 relative overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] screen-enter">
+      <div className="h-[100dvh] bg-blue-50 flex flex-col items-center justify-center p-6 relative overflow-hidden screen-enter" style={{ paddingTop: 'var(--sat)', paddingBottom: 'var(--sab)' }}>
         <div className="z-10 flex flex-col items-center text-center space-y-6">
            <div className="bg-white p-6 rounded-full shadow-lg mb-2">
              <Stethoscope size={64} className="text-blue-600" />
@@ -515,7 +561,7 @@ const App: React.FC = () => {
   if (currentScreen === Screen.MENU) {
     return (
       <div className="h-[100dvh] bg-white flex flex-col relative overflow-hidden screen-enter">
-        <div className="pt-[calc(2rem+env(safe-area-inset-top))] pb-4 px-5 bg-white shrink-0 z-10 border-b border-gray-100">
+        <div className="pb-4 px-5 bg-white shrink-0 z-10 border-b border-gray-100" style={{ paddingTop: 'calc(2rem + var(--sat))' }}>
            <div className="flex justify-between items-center">
               <h1 className="text-2xl font-bold text-gray-900">Impostazioni</h1>
               <button onClick={goBack} className="bg-gray-100 p-2 rounded-full"><X size={24} /></button>
@@ -565,7 +611,7 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        <div className="px-5 pt-2 bg-white shrink-0 z-30 pb-[calc(3rem+env(safe-area-inset-bottom))]">
+        <div className="px-5 pt-2 bg-white shrink-0 z-30" style={{ paddingBottom: 'calc(3rem + var(--sab))' }}>
           <Button fullWidth onClick={goBack} variant="secondary">Torna alla Home</Button>
         </div>
 
@@ -1158,7 +1204,7 @@ const App: React.FC = () => {
           <div ref={medsEndRef} />
         </div>
         
-        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 z-30 pb-[calc(3rem+env(safe-area-inset-bottom))] flex justify-center">
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 z-30 flex justify-center" style={{ paddingBottom: 'calc(3rem + var(--sab))' }}>
             <button 
               onClick={handleCompleteRegistration} 
               className="w-full px-8 py-4 bg-teal-600 text-white font-bold text-xl rounded-xl shadow-lg flex items-center justify-center gap-3 active:scale-95 transition-transform"
@@ -1177,7 +1223,7 @@ const App: React.FC = () => {
     return (
       <div className="h-[100dvh] bg-gray-50 flex flex-col relative overflow-hidden screen-enter">
         
-        <div className="bg-teal-700 text-white rounded-b-[3rem] shadow-lg pt-[calc(1.5rem+env(safe-area-inset-top))] pb-12 landscape:pb-16 flex flex-col px-4 shrink-0 z-10 relative overflow-hidden">
+        <div className="bg-teal-700 text-white rounded-b-[3rem] shadow-lg pb-12 landscape:pb-16 flex flex-col px-4 shrink-0 z-10 relative overflow-hidden" style={{ paddingTop: 'calc(1.5rem + var(--sat))' }}>
             <div className="absolute inset-0 opacity-10 pointer-events-none">
                 <div className="absolute -top-10 -right-10"><Stethoscope size={200} /></div>
             </div>
@@ -1200,7 +1246,7 @@ const App: React.FC = () => {
            </div>
         </div>
 
-        <div className="px-4 -mt-10 landscape:-mt-12 flex-1 flex flex-col relative z-20 min-h-0 overflow-y-auto no-scrollbar pb-[calc(10rem+env(safe-area-inset-bottom))] landscape:pb-4 landscape:overflow-visible">
+        <div className="px-4 -mt-10 landscape:-mt-12 flex-1 flex flex-col relative z-20 min-h-0 overflow-y-auto no-scrollbar landscape:pb-4 landscape:overflow-visible" style={{ paddingBottom: 'calc(10rem + var(--sab))' }}>
           <div className="bg-white p-5 rounded-[2.5rem] shadow-xl border border-gray-100 min-h-full flex flex-col justify-center items-center w-full">
              {!hasDoctor ? (
                <div className="text-center flex flex-col items-center justify-center h-full">
@@ -1250,7 +1296,7 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        <div className="fixed bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-100 z-30 pb-[calc(3rem+env(safe-area-inset-bottom))] flex justify-center">
+        <div className="fixed bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-100 z-30 flex justify-center" style={{ paddingBottom: 'calc(3rem + var(--sab))' }}>
           <div className="w-full">
             <Button 
               fullWidth 
@@ -1382,7 +1428,7 @@ const App: React.FC = () => {
              })
            )}
         </div>
-        <div className="fixed bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-100 z-40 pb-[calc(3rem+env(safe-area-inset-bottom))] flex justify-center">
+        <div className="fixed bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-100 z-40 flex justify-center" style={{ paddingBottom: 'calc(3rem + var(--sab))' }}>
             <button onClick={handleSendClick} disabled={selectedMeds.size === 0} className={`w-full bg-teal-600 text-white font-bold text-xl py-4 rounded-xl shadow-lg flex items-center justify-center gap-3 ${selectedMeds.size === 0 ? 'opacity-50 grayscale cursor-not-allowed' : 'active:scale-95 shadow-teal-200'} transition-all`}>
               <Send size={24} /> Invia Ora
             </button>
