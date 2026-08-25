@@ -1,4 +1,6 @@
 
+export const APP_VERSION = '1.1';
+
 export interface Medicine {
   id: string;
   name: string;

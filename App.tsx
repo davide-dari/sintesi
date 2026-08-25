@@ -28,6 +28,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { useAppStorage } from './services/storage';
+import { useUpdateChecker } from './services/updater';
 import { Button, Input, NavigationBar, ScreenLayout } from './components/UI';
 import { AppData, Medicine, DAYS_OF_WEEK } from './types';
 
@@ -50,6 +51,7 @@ type BackupMode = 'none' | 'export' | 'import';
 
 const App: React.FC = () => {
   const { data, saveData, updateField, loaded } = useAppStorage();
+  const { updateInfo, dismissUpdate } = useUpdateChecker();
   const [currentScreen, setCurrentScreen] = useState<Screen>(Screen.HOME); 
   
   // Wizard Step State
@@ -1443,7 +1445,43 @@ const App: React.FC = () => {
       </ScreenLayout>
     );
   }
-  return null;
+  return (
+    <>
+      {updateInfo && (
+        <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-6 animate-fade-in backdrop-blur-sm">
+          <div className="bg-white w-full rounded-3xl p-6 shadow-2xl relative animate-slide-up">
+            <div className="text-center">
+              <div className="bg-teal-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Download size={32} className="text-teal-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Aggiornamento Disponibile</h3>
+              <p className="text-sm text-gray-500 mb-1">Versione {updateInfo.latestVersion}</p>
+              {updateInfo.body && (
+                <p className="text-xs text-gray-400 mb-4 leading-relaxed max-h-24 overflow-y-auto">{updateInfo.body}</p>
+              )}
+              <div className="flex flex-col gap-3 mt-4">
+                <a
+                  href={updateInfo.downloadUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="w-full bg-teal-600 text-white py-3 px-6 rounded-xl font-bold text-lg shadow-md flex items-center justify-center gap-2 active:scale-95 transition-transform"
+                  onClick={dismissUpdate}
+                >
+                  <Download size={20} /> Aggiorna Ora
+                </a>
+                <button
+                  onClick={dismissUpdate}
+                  className="w-full bg-gray-100 text-gray-600 py-3 px-6 rounded-xl font-bold text-lg active:scale-95 transition-transform"
+                >
+                  Più Tardi
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
 };
 
 export default App;
