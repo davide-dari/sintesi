@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { useAppStorage } from './services/storage';
 import { useUpdateChecker } from './services/updater';
+import { scanMedicineFromImage } from './services/ocr';
 import { Button, Input, NavigationBar, ScreenLayout } from './components/UI';
 import { AppData, Medicine, DAYS_OF_WEEK } from './types';
 
@@ -78,6 +79,9 @@ const App: React.FC = () => {
   const [backupMode, setBackupMode] = useState<BackupMode>('none');
   const [importText, setImportText] = useState('');
   const [copySuccess, setCopySuccess] = useState(false);
+  const [scanning, setScanning] = useState(false);
+  const [scanResults, setScanResults] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const medsEndRef = useRef<HTMLDivElement>(null);
   const historyInitialized = useRef(false);
@@ -387,6 +391,44 @@ const App: React.FC = () => {
     setTempMeds(updated);
     updateField('medicines', updated);
     setMedInput('');
+    setTimeout(() => {
+      medsEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+  };
+
+  const handleScanPhoto = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setScanning(true);
+    setScanResults([]);
+    try {
+      const reader = new FileReader();
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+      const results = await scanMedicineFromImage(dataUrl);
+      setScanResults(results);
+    } catch (err) {
+      console.error('OCR failed:', err);
+      alert('Errore durante la scansione. Riprova.');
+    } finally {
+      setScanning(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const addScannedMed = (name: string) => {
+    const newMed: Medicine = {
+      id: Date.now().toString(),
+      name,
+      type: medType,
+    };
+    const updated = [...tempMeds, newMed];
+    setTempMeds(updated);
+    updateField('medicines', updated);
+    setScanResults((prev) => prev.filter((r) => r !== name));
     setTimeout(() => {
       medsEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 100);
@@ -1157,6 +1199,56 @@ const App: React.FC = () => {
              <button onClick={() => setMedType('farmaco')} className={`flex-1 py-3 rounded-xl text-lg font-bold border-2 transition-all ${medType === 'farmaco' ? 'bg-orange-500 border-orange-600 text-white shadow-md' : 'bg-white text-gray-400 border-gray-200'}`}>Farmaco</button>
              <button onClick={() => setMedType('visita')} className={`flex-1 py-3 rounded-xl text-lg font-bold border-2 transition-all ${medType === 'visita' ? 'bg-blue-600 border-blue-700 text-white shadow-md' : 'bg-white text-gray-400 border-gray-200'}`}>Visita</button>
           </div>
+
+          {/* Scan button - only for farmaco */}
+          {medType === 'farmaco' && (
+            <div className="mb-4">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handleScanPhoto}
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={scanning}
+                className="w-full py-3 rounded-xl border-2 border-dashed border-teal-300 bg-white text-teal-700 font-bold flex items-center justify-center gap-2 active:scale-95 transition-all disabled:opacity-50"
+              >
+                {scanning ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-teal-600 border-t-transparent rounded-full animate-spin" />
+                    Analisi in corso...
+                  </>
+                ) : (
+                  <>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+                    Scansiona Confezione
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
+          {/* Scan results */}
+          {scanResults.length > 0 && (
+            <div className="mb-4 space-y-2">
+              <p className="text-xs font-bold text-teal-600 uppercase tracking-wide">Trovati:</p>
+              {scanResults.map((name) => (
+                <div key={name} className="flex items-center gap-2 bg-white p-3 rounded-xl border border-teal-200">
+                  <span className="flex-1 font-bold text-gray-900 text-sm">{name}</span>
+                  <button
+                    onClick={() => addScannedMed(name)}
+                    className="bg-teal-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold active:scale-95 transition-transform flex items-center gap-1"
+                  >
+                    <Plus size={14} /> Aggiungi
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
           <div className="flex flex-col gap-2">
             <label className="text-sm font-bold text-gray-700 ml-1">{medType === 'farmaco' ? 'Nome Farmaco' : 'Tipo Visita'}</label>
             <div className="flex items-center gap-2 w-full">
