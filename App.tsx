@@ -1243,7 +1243,43 @@ const App: React.FC = () => {
     );
   }
 
-  return null;
+  return (
+    <>
+      {updateInfo && (
+        <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-6 animate-fade-in backdrop-blur-sm">
+          <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl relative animate-slide-up">
+            <div className="bg-teal-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Download size={32} className="text-teal-600" />
+            </div>
+            <h3 className="text-2xl font-black text-gray-900 text-center mb-2">Aggiornamento disponibile</h3>
+            <p className="text-gray-500 text-center mb-2 leading-relaxed">
+              Versione <span className="font-bold text-teal-700">{updateInfo.latestVersion}</span> disponibile.
+            </p>
+            {updateInfo.body && (
+              <p className="text-sm text-gray-400 text-center mb-6 leading-relaxed line-clamp-3">{updateInfo.body}</p>
+            )}
+            {!updateInfo.body && <div className="mb-6" />}
+            <div className="flex gap-3">
+              <button
+                onClick={() => dismissUpdate(updateInfo.latestVersion)}
+                className="flex-1 bg-gray-100 text-gray-600 py-4 rounded-2xl font-bold text-lg active:scale-95 transition-transform"
+              >
+                Salta
+              </button>
+              <a
+                href={updateInfo.downloadUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="flex-1 bg-teal-600 text-white py-4 rounded-2xl font-bold text-lg text-center active:scale-95 transition-transform flex items-center justify-center gap-2"
+              >
+                <Download size={22} /> Aggiorna
+              </a>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
 };
 
 export default App;
