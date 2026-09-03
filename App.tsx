@@ -94,40 +94,7 @@ const App: React.FC = () => {
     if (backupMode === 'none') setImportText('');
   }, [backupMode]);
 
-  useEffect(() => {
-    const setSafeAreas = () => {
-      const root = document.documentElement;
-      const test = document.createElement('div');
-      test.style.paddingTop = 'env(safe-area-inset-top)';
-      document.body.appendChild(test);
-      const envTop = getComputedStyle(test).paddingTop;
-      document.body.removeChild(test);
-      if (envTop && envTop !== '0px' && envTop !== '0') {
-        root.style.setProperty('--sat', envTop);
-      } else {
-        const vp = window.visualViewport;
-        if (vp) root.style.setProperty('--sat', `${vp.offsetTop}px`);
-      }
-      const testB = document.createElement('div');
-      testB.style.paddingBottom = 'env(safe-area-inset-bottom)';
-      document.body.appendChild(testB);
-      const envBottom = getComputedStyle(testB).paddingBottom;
-      document.body.removeChild(testB);
-      if (envBottom && envBottom !== '0px' && envBottom !== '0') {
-        root.style.setProperty('--sab', envBottom);
-      } else {
-        const vp = window.visualViewport;
-        if (vp) root.style.setProperty('--sab', `${Math.max(0, window.innerHeight - vp.height - vp.offsetTop)}px`);
-      }
-    };
-    setSafeAreas();
-    window.visualViewport?.addEventListener('resize', setSafeAreas);
-    window.visualViewport?.addEventListener('scroll', setSafeAreas);
-    return () => {
-      window.visualViewport?.removeEventListener('resize', setSafeAreas);
-      window.visualViewport?.removeEventListener('scroll', setSafeAreas);
-    };
-  }, []);
+  useEffect(() => {}, []);
 
   useEffect(() => {
     if (loaded) {
@@ -409,7 +376,7 @@ const App: React.FC = () => {
   // ============ WELCOME SCREEN ============
   if (currentScreen === Screen.WELCOME) {
     return (
-      <div className="h-[100dvh] bg-gradient-to-b from-teal-600 to-teal-800 flex flex-col items-center justify-center p-8 relative overflow-hidden screen-enter" style={{ paddingTop: 'var(--sat)', paddingBottom: 'var(--sab)' }}>
+      <div className="h-[100dvh] bg-gradient-to-b from-teal-600 to-teal-800 flex flex-col items-center justify-center p-8 relative overflow-hidden screen-enter">
         <div className="absolute inset-0 opacity-10 pointer-events-none">
           <div className="absolute -top-20 -right-20"><Stethoscope size={200} /></div>
           <div className="absolute -bottom-10 -left-10"><Sparkles size={150} /></div>
@@ -448,7 +415,7 @@ const App: React.FC = () => {
   if (currentScreen === Screen.MENU) {
     const hasProfile = data.isRegistered && data.doctor.lastName;
     return (
-      <div className="h-[100dvh] bg-gray-50 flex flex-col relative overflow-hidden screen-enter" style={{ paddingTop: 'var(--sat)' }}>
+      <div className="h-[100dvh] bg-gray-50 flex flex-col relative overflow-hidden screen-enter">
         <div className="bg-teal-700 text-white rounded-b-[3rem] shadow-lg pt-8 pb-16 flex flex-col px-6 shrink-0 z-10 relative overflow-hidden">
           <div className="absolute inset-0 opacity-10 pointer-events-none">
             <div className="absolute -top-10 -right-10"><Stethoscope size={200} /></div>
@@ -461,7 +428,7 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        <div className="px-6 -mt-10 flex-1 flex flex-col relative z-20 min-h-0 overflow-y-auto no-scrollbar pb-8" style={{ paddingBottom: 'calc(8rem + var(--sab))' }}>
+        <div className="px-6 -mt-10 flex-1 flex flex-col relative z-20 min-h-0 overflow-y-auto no-scrollbar pb-8">
           <div className="bg-white rounded-[2rem] shadow-xl border border-gray-100 p-6 flex flex-col gap-4">
             <p className="text-sm font-bold text-gray-400 uppercase tracking-widest px-1">Cosa vuoi fare?</p>
 
@@ -507,7 +474,7 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        <div className="fixed bottom-0 left-0 right-0 px-6 pt-3 pb-4 bg-white/90 backdrop-blur-sm border-t border-gray-100 z-30" style={{ paddingBottom: 'calc(1rem + var(--sab))' }}>
+        <div className="fixed bottom-0 left-0 right-0 px-6 pt-3 pb-4 bg-white/90 backdrop-blur-sm border-t border-gray-100 z-30">
           <div className="flex gap-3">
             <button onClick={() => setBackupMode('export')} className="flex-1 bg-gray-100 py-4 rounded-2xl flex flex-col items-center gap-1 active:scale-95 transition-all">
               <Download size={24} className="text-gray-600" />
@@ -556,7 +523,7 @@ const App: React.FC = () => {
   // ============ PROFILE CHOICE ============
   if (currentScreen === Screen.PROFILE_CHOICE) {
     return (
-      <div className="h-[100dvh] bg-gradient-to-b from-blue-600 to-blue-800 flex flex-col items-center justify-center p-8 relative overflow-hidden screen-enter" style={{ paddingTop: 'var(--sat)', paddingBottom: 'var(--sab)' }}>
+      <div className="h-[100dvh] bg-gradient-to-b from-blue-600 to-blue-800 flex flex-col items-center justify-center p-8 relative overflow-hidden screen-enter">
         <div className="absolute inset-0 opacity-10 pointer-events-none">
           <div className="absolute -top-20 -right-20"><Stethoscope size={200} /></div>
         </div>
@@ -593,7 +560,7 @@ const App: React.FC = () => {
   // ============ INTRO USER ============
   if (currentScreen === Screen.INTRO_USER) {
     return (
-      <div className="h-[100dvh] bg-gradient-to-b from-teal-600 to-teal-800 flex flex-col items-center justify-center p-8 relative overflow-hidden screen-enter" style={{ paddingTop: 'var(--sat)', paddingBottom: 'var(--sab)' }}>
+      <div className="h-[100dvh] bg-gradient-to-b from-teal-600 to-teal-800 flex flex-col items-center justify-center p-8 relative overflow-hidden screen-enter">
         <div className="absolute inset-0 opacity-10 pointer-events-none">
           <div className="absolute -top-20 -right-20"><User size={200} /></div>
         </div>
@@ -643,7 +610,7 @@ const App: React.FC = () => {
   // ============ INTRO DOCTOR ============
   if (currentScreen === Screen.INTRO_DOCTOR) {
     return (
-      <div className="h-[100dvh] bg-gradient-to-b from-blue-600 to-blue-800 flex flex-col items-center justify-center p-8 relative overflow-hidden screen-enter" style={{ paddingTop: 'var(--sat)', paddingBottom: 'var(--sab)' }}>
+      <div className="h-[100dvh] bg-gradient-to-b from-blue-600 to-blue-800 flex flex-col items-center justify-center p-8 relative overflow-hidden screen-enter">
         <div className="absolute inset-0 opacity-10 pointer-events-none">
           <div className="absolute -top-20 -right-20"><Stethoscope size={200} /></div>
         </div>
@@ -890,7 +857,7 @@ const App: React.FC = () => {
           <div ref={medsEndRef} />
         </div>
 
-        <div className="fixed bottom-0 left-0 right-0 p-5 bg-white border-t border-gray-100 z-30 flex justify-center" style={{ paddingBottom: 'calc(3rem + var(--sab))' }}>
+        <div className="fixed bottom-0 left-0 right-0 p-5 bg-white border-t border-gray-100 z-30 flex justify-center">
           <button onClick={handleCompleteRegistration} className="w-full px-8 py-5 bg-teal-600 text-white font-bold text-2xl rounded-2xl shadow-lg flex items-center justify-center gap-3 active:scale-95 transition-transform">
             <CheckCircle2 size={32} /> Salva e Esci
           </button>
@@ -906,7 +873,7 @@ const App: React.FC = () => {
 
     return (
       <div className="h-[100dvh] bg-gray-50 flex flex-col relative overflow-hidden screen-enter">
-        <div className="bg-teal-700 text-white rounded-b-[3rem] shadow-lg pt-8 pb-16 flex flex-col px-6 shrink-0 z-10 relative overflow-hidden" style={{ paddingTop: 'calc(2rem + var(--sat))' }}>
+        <div className="bg-teal-700 text-white rounded-b-[3rem] shadow-lg pt-8 pb-16 flex flex-col px-6 shrink-0 z-10 relative overflow-hidden">
           <div className="absolute inset-0 opacity-10 pointer-events-none">
             <div className="absolute -top-10 -right-10"><Stethoscope size={200} /></div>
           </div>
@@ -926,7 +893,7 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        <div className="px-5 -mt-10 flex-1 flex flex-col relative z-20 min-h-0 overflow-y-auto no-scrollbar pb-8" style={{ paddingBottom: 'calc(8rem + var(--sab))' }}>
+        <div className="px-5 -mt-10 flex-1 flex flex-col relative z-20 min-h-0 overflow-y-auto no-scrollbar pb-8">
           <div className="bg-white p-6 rounded-[2.5rem] shadow-xl border border-gray-100 min-h-full flex flex-col justify-center items-center w-full">
             {!hasDoctor ? (
               <div className="text-center flex flex-col items-center justify-center h-full">
@@ -969,7 +936,7 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        <div className="fixed bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-100 z-30 flex justify-center" style={{ paddingBottom: 'calc(3rem + var(--sab))' }}>
+        <div className="fixed bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-100 z-30 flex justify-center">
           <button onClick={() => goToScreen(Screen.SELECTION)} disabled={!hasDoctor} className={`w-full py-5 bg-teal-600 text-white font-black text-2xl rounded-2xl shadow-lg flex items-center justify-center gap-3 ${!hasDoctor ? 'opacity-50 grayscale' : 'active:scale-95 shadow-teal-100'} transition-all`}>
             <Send size={28} /> INVIA RICETTE
           </button>
@@ -977,7 +944,7 @@ const App: React.FC = () => {
 
         {showStudioDetails && (
           <div className="fixed inset-0 bg-white z-50 flex flex-col overflow-hidden animate-fade-in">
-            <div className="pt-8 pb-4 px-6 bg-white shrink-0 border-b border-gray-100" style={{ paddingTop: 'calc(2rem + var(--sat))' }}>
+            <div className="pt-8 pb-4 px-6 bg-white shrink-0 border-b border-gray-100">
               <div className="flex justify-between items-start">
                 <div>
                   <h2 className="text-2xl font-black text-gray-900">Il Tuo Studio</h2>
@@ -1078,7 +1045,7 @@ const App: React.FC = () => {
             })
           )}
         </div>
-        <div className="fixed bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-100 z-40 flex justify-center" style={{ paddingBottom: 'calc(3rem + var(--sab))' }}>
+        <div className="fixed bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-100 z-40 flex justify-center">
           <button onClick={handleSendClick} disabled={selectedMeds.size === 0} className={`w-full bg-teal-600 text-white font-black text-2xl py-5 rounded-2xl shadow-lg flex items-center justify-center gap-3 ${selectedMeds.size === 0 ? 'opacity-50 grayscale cursor-not-allowed' : 'active:scale-95 shadow-teal-200'} transition-all`}>
             <Send size={28} /> Invia Ora
           </button>
@@ -1193,7 +1160,7 @@ const App: React.FC = () => {
   // ============ MENU SETTINGS ============
   if (currentScreen === Screen.MENU_SETTINGS) {
     return (
-      <div className="h-[100dvh] bg-white flex flex-col relative overflow-hidden screen-enter" style={{ paddingTop: 'var(--sat)' }}>
+      <div className="h-[100dvh] bg-white flex flex-col relative overflow-hidden screen-enter">
         <div className="pt-8 pb-4 px-6 bg-white shrink-0 z-10 border-b border-gray-100">
           <div className="flex justify-between items-center">
             <h1 className="text-3xl font-black text-gray-900">Impostazioni</h1>
@@ -1239,7 +1206,7 @@ const App: React.FC = () => {
             </div>
           </div>
         </div>
-        <div className="px-6 pt-3 bg-white shrink-0 z-30 border-t border-gray-100" style={{ paddingBottom: 'calc(1rem + var(--sab))' }}>
+        <div className="px-6 pt-3 bg-white shrink-0 z-30 border-t border-gray-100">
           <Button fullWidth onClick={goBack} variant="secondary">Torna alla Home</Button>
         </div>
 
