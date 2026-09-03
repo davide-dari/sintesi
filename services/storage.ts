@@ -11,7 +11,8 @@ export const useAppStorage = () => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
-        setData(JSON.parse(stored));
+        const parsed = JSON.parse(stored);
+        setData({ ...INITIAL_DATA, ...parsed });
       }
     } catch (e) {
       console.error("Failed to load data", e);

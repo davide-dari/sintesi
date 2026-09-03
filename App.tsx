@@ -165,6 +165,17 @@ const App: React.FC = () => {
     }
   }, [regStep, currentScreen]);
 
+  useEffect(() => {
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state && event.state.screen !== undefined) {
+        setCurrentScreen(event.state.screen);
+        setRegStep(0);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   if (!loaded) return (
     <div className="h-[100dvh] flex items-center justify-center bg-teal-50">
       <div className="text-teal-700 text-2xl font-bold">Caricamento...</div>
@@ -178,17 +189,6 @@ const App: React.FC = () => {
   };
 
   const goBack = () => window.history.back();
-
-  useEffect(() => {
-    const handlePopState = (event: PopStateEvent) => {
-      if (event.state && event.state.screen !== undefined) {
-        setCurrentScreen(event.state.screen);
-        setRegStep(0);
-      }
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
 
   const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   const capitalize = (str: string) => {
