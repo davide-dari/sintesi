@@ -1,8 +1,8 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'com.ricettafacile.app',
-  appName: 'Ricetta Facile',
+  appId: 'com.sintesi.app',
+  appName: 'Sintesi',
   webDir: 'dist',
   android: {
     backgroundColor: '#0f766e',

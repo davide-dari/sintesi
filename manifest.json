@@ -1,21 +1,22 @@
 {
-  "short_name": "Ricetta",
-  "name": "Ricetta Facile Dottore",
+  "name": "Sintesi",
+  "short_name": "Sintesi",
+  "description": "App semplice e intuitiva per gestire le tue esigenze quotidiane.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#0f766e",
+  "orientation": "portrait",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/3063/3063176.png",
-      "type": "image/png",
-      "sizes": "192x192"
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
     },
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/3063/3063176.png",
-      "type": "image/png",
-      "sizes": "512x512"
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
     }
-  ],
-  "start_url": ".",
-  "display": "standalone",
-  "theme_color": "#0f766e",
-  "background_color": "#ffffff",
-  "orientation": "portrait"
+  ]
 }

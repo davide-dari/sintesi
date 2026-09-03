@@ -16,7 +16,7 @@ export const useUpdateChecker = () => {
     setChecking(true);
     try {
       const res = await fetch(
-        'https://api.github.com/repos/davide-dari/ricetta-facile/releases/latest',
+        'https://api.github.com/repos/davide-dari/sintesi/releases/latest',
         { cache: 'no-store' }
       );
       if (!res.ok) return;

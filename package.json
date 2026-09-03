@@ -1,5 +1,5 @@
 {
-  "name": "ricetta-facile",
+  "name": "sintesi",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -10,13 +10,11 @@
   },
   "dependencies": {
     "@capacitor/android": "^8.0.1",
-    "@capacitor/camera": "^8.2.3",
     "@capacitor/core": "^8.0.1",
     "@capacitor/status-bar": "^8.0.3",
     "lucide-react": "0.469.0",
     "react": "^19.2.3",
-    "react-dom": "^19.2.3",
-    "tesseract.js": "^7.0.0"
+    "react-dom": "^19.2.3"
   },
   "devDependencies": {
     "@capacitor/cli": "^8.5.0",

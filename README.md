@@ -1,31 +1,39 @@
-# Ricetta Facile
+# Sintesi
 
-App mobile per gestire e inviare richieste di ricette mediche al proprio medico di base.
+App mobile per gestire facilmente le ricette mediche del tuo dottore.
 
-## Funzionalita'
+Sintesi è pensata per utenti anziani o con difficoltà tecnologiche: interfaccia semplice, font grandi, elevate dimensioni di tocco e alto contrasto visivo.
 
-- Registrazione utente e medico con wizard guidato
-- Gestione farmaci e visite
-- Invio email al medico tramite mailto
-- Stato aperto/chiuso studio in tempo reale
-- Mappa Google Maps dello studio
-- Backup/ripristino dati
+## Funzionalità
+
+- Registrazione guidata del profilo medico (genere, cognome, email, indirizzo, CAP, telefono, orari)
+- Stato in tempo reale dello studio medico (aperto / chiuso / chiude a breve)
+- Mappa Google Maps integrata dello studio
+- Chiamata diretta al medico da dentro l'app
+- Gestione lista farmaci e visite da richiedere
+- Invio ricette via email con un solo tap
+- Backup e ripristino dati tramite codice copia-incolla
+- Aggiornamenti automatici da GitHub Releases
+
+## Stack
+
+React + TypeScript + Vite + Capacitor (Android) + Tailwind CSS
 
 ## Run Locally
 
 **Prerequisites:** Node.js
 
-1. Install dependencies:
-   `npm install`
-2. Run the app:
-   `npm run dev`
+```bash
+npm install
+npm run dev
+```
 
 ## Build Android
 
 ```bash
 npx cap sync android
 cd android
-./gradlew bundleRelease
+./gradlew assembleDebug
 ```
 
 ## Licenza

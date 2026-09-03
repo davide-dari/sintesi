@@ -1,11 +1,10 @@
 
-export const APP_VERSION = '1.3';
+export const APP_VERSION = '2.0';
 
 export interface Medicine {
   id: string;
   name: string;
   type: 'farmaco' | 'visita';
-  selected?: boolean; // Used in selection screen
 }
 
 export interface DoctorHours {
@@ -25,27 +24,29 @@ export interface DoctorProfile {
   landlines: string[];
   mobiles: string[];
   hours: {
-    [key: string]: DoctorHours; // 'Lun', 'Mar', etc.
+    [key: string]: DoctorHours;
   };
 }
 
 export interface UserProfile {
   firstName: string;
   lastName: string;
-  // Email removed
 }
 
 export interface AppData {
-  isRegistered: boolean;
+  hasCompletedWelcome: boolean;
+  profileName: string;
   user: UserProfile;
   doctor: DoctorProfile;
   medicines: Medicine[];
+  isRegistered: boolean;
 }
 
 export const DAYS_OF_WEEK = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì'];
 
 export const INITIAL_DATA: AppData = {
-  isRegistered: false,
+  hasCompletedWelcome: false,
+  profileName: '',
   user: { firstName: '', lastName: '' },
   doctor: {
     firstName: '',
@@ -66,4 +67,5 @@ export const INITIAL_DATA: AppData = {
     },
   },
   medicines: [],
+  isRegistered: false,
 };
