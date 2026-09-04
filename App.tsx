@@ -149,8 +149,8 @@ const App: React.FC = () => {
     </div>
   );
 
-  const goToScreen = (screen: Screen) => {
-    setRegStep(0);
+  const goToScreen = (screen: Screen, startStep?: number) => {
+    setRegStep(startStep ?? 0);
     window.history.pushState({ screen }, '');
     setCurrentScreen(screen);
   };
@@ -193,7 +193,9 @@ const App: React.FC = () => {
   // --- HANDLERS ---
   const handleWelcomeComplete = () => {
     if (!welcomeName.trim()) { alert('Per favore, inserisci il tuo nome'); return; }
-    updateField('profileName', capitalize(welcomeName.trim()));
+    const name = capitalize(welcomeName.trim());
+    updateField('profileName', name);
+    updateField('user', { ...data.user, firstName: name });
     updateField('hasCompletedWelcome', true);
     goToScreen(Screen.MENU);
   };
@@ -213,6 +215,8 @@ const App: React.FC = () => {
   const handleUserStepBack = () => {
     if (regStep === 0) {
       if (currentScreen === Screen.REG_NAME) goBack();
+    } else if (regStep === 1 && data.user.firstName.trim()) {
+      goBack();
     } else {
       setRegStep(regStep - 1);
     }
@@ -435,7 +439,7 @@ const App: React.FC = () => {
             <button
               onClick={() => {
                 if (hasProfile) {
-                  goToScreen(Screen.PROFILE_CHOICE);
+                  goToScreen(Screen.SELECTION);
                 } else {
                   goToScreen(Screen.INTRO_USER);
                 }
@@ -573,7 +577,7 @@ const App: React.FC = () => {
             <p className="text-xl text-teal-100 font-medium">Creiamo il tuo profilo medico.</p>
           </div>
           <div className="w-full space-y-4">
-            <button onClick={() => goToScreen(Screen.REG_NAME)} className="w-full bg-white text-teal-700 py-5 px-8 rounded-2xl text-2xl font-black shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3">
+            <button onClick={() => goToScreen(Screen.REG_NAME, data.user.firstName.trim() ? 1 : 0)} className="w-full bg-white text-teal-700 py-5 px-8 rounded-2xl text-2xl font-black shadow-xl active:scale-95 transition-all flex items-center justify-center gap-3">
               Inizia Ora <ArrowRight size={28} />
             </button>
             <button onClick={goBack} className="text-white/70 font-bold text-lg">Torna Indietro</button>
