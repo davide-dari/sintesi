@@ -1,5 +1,5 @@
 
-export const APP_VERSION = '2.1';
+export const APP_VERSION = '2.2';
 
 export interface Medicine {
   id: string;
@@ -31,6 +31,21 @@ export interface DoctorProfile {
 export interface UserProfile {
   firstName: string;
   lastName: string;
+  address: string;
+  cap: string;
+  city: string;
+  province: string;
+  fiscalCode: string;
+}
+
+export interface Recesso {
+  id: string;
+  contractType: string;
+  contractNumber: string;
+  contractDate: string;
+  companyName: string;
+  companyAddress: string;
+  companyPec: string;
 }
 
 export interface AppData {
@@ -39,6 +54,7 @@ export interface AppData {
   user: UserProfile;
   doctor: DoctorProfile;
   medicines: Medicine[];
+  recessi: Recesso[];
   isRegistered: boolean;
 }
 
@@ -47,7 +63,7 @@ export const DAYS_OF_WEEK = ['Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'V
 export const INITIAL_DATA: AppData = {
   hasCompletedWelcome: false,
   profileName: '',
-  user: { firstName: '', lastName: '' },
+  user: { firstName: '', lastName: '', address: '', cap: '', city: '', province: '', fiscalCode: '' },
   doctor: {
     firstName: '',
     lastName: '',
@@ -67,5 +83,6 @@ export const INITIAL_DATA: AppData = {
     },
   },
   medicines: [],
+  recessi: [],
   isRegistered: false,
 };

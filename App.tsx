@@ -27,6 +27,7 @@ import {
   Sparkles,
   Smartphone,
   Database,
+  FileText,
 } from 'lucide-react';
 import { useAppStorage } from './services/storage';
 import { useUpdateChecker } from './services/updater';
@@ -47,6 +48,8 @@ enum Screen {
   EDIT_USER,
   EDIT_DOCTOR,
   MENU_SETTINGS,
+  RECESSO_WIZARD,
+  RECESSO_PREVIEW,
 }
 
 type BackupMode = 'none' | 'export' | 'import';
@@ -70,6 +73,20 @@ const App: React.FC = () => {
 
   const [landlineInput, setLandlineInput] = useState('');
   const [mobileInput, setMobileInput] = useState('');
+
+  const [recessoStep, setRecessoStep] = useState(0);
+  const [recessoContractType, setRecessoContractType] = useState('');
+  const [recessoContractNumber, setRecessoContractNumber] = useState('');
+  const [recessoContractDate, setRecessoContractDate] = useState('');
+  const [recessoCompanyName, setRecessoCompanyName] = useState('');
+  const [recessoCompanyAddress, setRecessoCompanyAddress] = useState('');
+  const [recessoCompanyPec, setRecessoCompanyPec] = useState('');
+  const [recessoUserAddress, setRecessoUserAddress] = useState('');
+  const [recessoUserCap, setRecessoUserCap] = useState('');
+  const [recessoUserCity, setRecessoUserCity] = useState('');
+  const [recessoUserProvince, setRecessoUserProvince] = useState('');
+  const [recessoUserCF, setRecessoUserCF] = useState('');
+  const [showRecessoSuccess, setShowRecessoSuccess] = useState(false);
 
   const [showStudioDetails, setShowStudioDetails] = useState(false);
   const [showCallMenu, setShowCallMenu] = useState(false);
@@ -377,6 +394,105 @@ const App: React.FC = () => {
     }
   };
 
+  // --- RECESSO HANDLERS ---
+  const RECESSO_CONTRACT_TYPES = ['Telefonia', 'Internet', 'Luce', 'Gas', 'Assicurazione', 'Abbonamento', 'Locazione', 'Altro'];
+
+  const resetRecessoWizard = () => {
+    setRecessoStep(0);
+    setRecessoContractType('');
+    setRecessoContractNumber('');
+    setRecessoContractDate('');
+    setRecessoCompanyName('');
+    setRecessoCompanyAddress('');
+    setRecessoCompanyPec('');
+    setRecessoUserAddress(data.user.address || '');
+    setRecessoUserCap(data.user.cap || '');
+    setRecessoUserCity(data.user.city || '');
+    setRecessoUserProvince(data.user.province || '');
+    setRecessoUserCF(data.user.fiscalCode || '');
+  };
+
+  const generateRecessoMailto = () => {
+    const user = data.user;
+    const address = recessoUserAddress || user.address;
+    const cap = recessoUserCap || user.cap;
+    const city = recessoUserCity || user.city;
+    const province = recessoUserProvince || user.province;
+    const cf = recessoUserCF || user.fiscalCode;
+    const fullName = `${user.firstName} ${user.lastName}`;
+    const fullAddress = `${address}, ${cap} ${city} (${province})`;
+
+    const subject = `OGGETTO: Recesso dal contratto ${recessoContractType} n. ${recessoContractNumber} del ${recessoContractDate}`;
+
+    const body = `Spett.le ${recessoCompanyName}
+${recessoCompanyAddress}
+PEC: ${recessoCompanyPec}
+
+Luogo e Data: ${city}, ${new Date().toLocaleDateString('it-IT')}
+
+OGGETTO: Recesso dal contratto ${recessoContractType} n. ${recessoContractNumber} del ${recessoContractDate}
+
+Il/La sottoscritto/a ${fullName}, nato/a e residente in ${fullAddress}, C.F. ${cf},
+
+COMUNICA E FORMALIZZA
+
+la propria volontà di esercitare il diritto di recesso dal contratto menzionato in oggetto, nel pieno rispetto dei termini di preavviso previsti dagli accordi contrattuali.
+
+Vi invito pertanto a procedere alla cessazione del servizio e a disattivare ogni prestazione ad esso collegata a partire dalla data di scadenza del preavviso.
+
+Richiedo inoltre un riscontro scritto che attesti la ricezione della presente comunicazione e la data esatta di cessazione del contratto.
+
+Allego copia del mio documento di identità in corso di validità.
+
+Distinti saluti.
+
+${fullName}
+Firma`;
+
+    return `mailto:${recessoCompanyPec}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  };
+
+  const handleRecessoStepNext = () => {
+    if (recessoStep === 0 && !recessoContractType) { alert('Seleziona il tipo di contratto'); return; }
+    if (recessoStep === 1 && !recessoContractNumber.trim()) { alert('Inserisci il numero del contratto'); return; }
+    if (recessoStep === 2 && !recessoContractDate) { alert('Inserisci la data del contratto'); return; }
+    if (recessoStep === 3 && !recessoCompanyName.trim()) { alert('Inserisci il nome dell\'azienda'); return; }
+    if (recessoStep === 4 && !recessoCompanyAddress.trim()) { alert('Inserisci l\'indirizzo dell\'azienda'); return; }
+    if (recessoStep === 5 && !recessoCompanyPec.trim()) { alert('Inserisci la PEC dell\'azienda'); return; }
+    if (recessoStep < 6) setRecessoStep(recessoStep + 1);
+    else goToScreen(Screen.RECESSO_PREVIEW);
+  };
+
+  const handleRecessoStepBack = () => {
+    if (recessoStep === 0) goBack();
+    else setRecessoStep(recessoStep - 1);
+  };
+
+  const handleSaveRecessoUser = () => {
+    updateField('user', {
+      ...data.user,
+      address: recessoUserAddress,
+      cap: recessoUserCap,
+      city: recessoUserCity,
+      province: recessoUserProvince,
+      fiscalCode: recessoUserCF,
+    });
+  };
+
+  const handleSendRecesso = () => {
+    handleSaveRecessoUser();
+    window.location.href = generateRecessoMailto();
+    setShowRecessoSuccess(true);
+    if (successTimerRef.current) clearTimeout(successTimerRef.current);
+    successTimerRef.current = setTimeout(() => {
+      if (currentScreen === Screen.RECESSO_PREVIEW) {
+        setShowRecessoSuccess(false);
+        window.history.replaceState({ screen: Screen.HOME }, '');
+        setCurrentScreen(Screen.HOME);
+      }
+    }, 2500);
+  };
+
   // ============ WELCOME SCREEN ============
   if (currentScreen === Screen.WELCOME) {
     return (
@@ -475,6 +591,20 @@ const App: React.FC = () => {
                 <ChevronRight size={28} className="text-blue-400" />
               </button>
             )}
+
+            <button
+              onClick={() => { resetRecessoWizard(); goToScreen(Screen.RECESSO_WIZARD); }}
+              className="w-full flex items-center gap-5 p-6 bg-gradient-to-r from-orange-50 to-orange-100 border-2 border-orange-200 rounded-2xl active:scale-95 transition-all shadow-sm"
+            >
+              <div className="bg-orange-600 p-4 rounded-2xl text-white shadow-md">
+                <FileText size={32} />
+              </div>
+              <div className="text-left flex-1">
+                <h3 className="text-2xl font-black text-gray-900">Recesso Facile</h3>
+                <p className="text-base text-gray-500 font-medium">Recesso contratti via PEC</p>
+              </div>
+              <ChevronRight size={28} className="text-orange-400" />
+            </button>
           </div>
         </div>
 
@@ -940,9 +1070,12 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        <div className="fixed bottom-0 left-0 right-0 p-6 bg-white border-t border-gray-100 z-30 flex justify-center">
-          <button onClick={() => goToScreen(Screen.SELECTION)} disabled={!hasDoctor} className={`w-full py-5 bg-teal-600 text-white font-black text-2xl rounded-2xl shadow-lg flex items-center justify-center gap-3 ${!hasDoctor ? 'opacity-50 grayscale' : 'active:scale-95 shadow-teal-100'} transition-all`}>
-            <Send size={28} /> INVIA RICETTE
+        <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-100 z-30 flex flex-col gap-3">
+          <button onClick={() => goToScreen(Screen.SELECTION)} disabled={!hasDoctor} className={`w-full py-4 bg-teal-600 text-white font-black text-xl rounded-2xl shadow-lg flex items-center justify-center gap-3 ${!hasDoctor ? 'opacity-50 grayscale' : 'active:scale-95 shadow-teal-100'} transition-all`}>
+            <Send size={26} /> INVIA RICETTE
+          </button>
+          <button onClick={() => { resetRecessoWizard(); goToScreen(Screen.RECESSO_WIZARD); }} className="w-full py-4 bg-blue-600 text-white font-black text-xl rounded-2xl shadow-lg flex items-center justify-center gap-3 active:scale-95 shadow-blue-100 transition-all">
+            <FileText size={26} /> RECESSO FACILE
           </button>
         </div>
 
@@ -1241,6 +1374,182 @@ const App: React.FC = () => {
                 </div>
               )}
             </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ============ RECESSO WIZARD ============
+  if (currentScreen === Screen.RECESSO_WIZARD) {
+    let title = '', subtitle = '', content = null;
+
+    switch (recessoStep) {
+      case 0:
+        title = 'Tipo di Contratto';
+        subtitle = 'Che tipo di contratto vuoi recedere?';
+        content = (
+          <div className="flex flex-col gap-3 animate-fade-in justify-center h-full pb-20">
+            {RECESSO_CONTRACT_TYPES.map(type => (
+              <button key={type} onClick={() => setRecessoContractType(type)} className={`w-full p-5 rounded-2xl border-2 transition-all active:scale-95 text-left font-bold text-xl ${recessoContractType === type ? 'bg-blue-50 border-blue-600 text-blue-900' : 'bg-white border-gray-200 text-gray-600'}`}>
+                {type}
+              </button>
+            ))}
+          </div>
+        );
+        break;
+      case 1:
+        title = 'Numero Contratto';
+        subtitle = 'Il numero identificativo del contratto';
+        content = (
+          <div className="flex flex-col h-full justify-center pb-20 animate-fade-in">
+            <Input ref={inputRef} label="" placeholder="Es. 123456789" value={recessoContractNumber} onChange={e => setRecessoContractNumber(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleRecessoStepNext()} className="text-center text-2xl py-5 font-bold border-2 border-blue-100 focus:border-blue-500 rounded-2xl" />
+          </div>
+        );
+        break;
+      case 2:
+        title = 'Data Contratto';
+        subtitle = 'Quando è stato stipulato?';
+        content = (
+          <div className="flex flex-col h-full justify-center pb-20 animate-fade-in">
+            <Input ref={inputRef} label="" type="date" value={recessoContractDate} onChange={e => setRecessoContractDate(e.target.value)} className="text-center text-2xl py-5 font-bold border-2 border-blue-100 focus:border-blue-500 rounded-2xl" />
+          </div>
+        );
+        break;
+      case 3:
+        title = 'Nome Azienda';
+        subtitle = 'La ragione sociale dell\'azienda';
+        content = (
+          <div className="flex flex-col h-full justify-center pb-20 animate-fade-in">
+            <Input ref={inputRef} label="" placeholder="Es. Telecom Italia" value={recessoCompanyName} onChange={e => setRecessoCompanyName(capitalize(e.target.value))} onKeyDown={e => e.key === 'Enter' && handleRecessoStepNext()} className="text-center text-2xl py-5 font-bold border-2 border-blue-100 focus:border-blue-500 rounded-2xl" />
+          </div>
+        );
+        break;
+      case 4:
+        title = 'Indirizzo Azienda';
+        subtitle = 'Dove si trova l\'azienda';
+        content = (
+          <div className="flex flex-col h-full justify-center pb-20 animate-fade-in">
+            <Input ref={inputRef} label="" placeholder="Via Roma 10, 00100 Roma" value={recessoCompanyAddress} onChange={e => setRecessoCompanyAddress(capitalize(e.target.value))} onKeyDown={e => e.key === 'Enter' && handleRecessoStepNext()} className="text-center text-xl py-5 font-bold border-2 border-blue-100 focus:border-blue-500 rounded-2xl" />
+          </div>
+        );
+        break;
+      case 5:
+        title = 'PEC Azienda';
+        subtitle = 'Indirizzo PEC per invio recesso';
+        content = (
+          <div className="flex flex-col h-full justify-center pb-20 animate-fade-in">
+            <Input ref={inputRef} label="" type="email" placeholder="pec@azienda.it" value={recessoCompanyPec} onChange={e => setRecessoCompanyPec(e.target.value.toLowerCase())} onKeyDown={e => e.key === 'Enter' && handleRecessoStepNext()} className="text-center text-xl py-5 font-bold border-2 border-blue-100 focus:border-blue-500 rounded-2xl" />
+          </div>
+        );
+        break;
+      case 6:
+        title = 'I tuoi dati';
+        subtitle = 'Dati per il recesso (se non già inseriti)';
+        content = (
+          <div className="flex flex-col gap-4 pb-20 animate-fade-in overflow-y-auto pt-2 no-scrollbar">
+            <Input label="Indirizzo" placeholder="Via Roma 10" value={recessoUserAddress} onChange={e => setRecessoUserAddress(capitalize(e.target.value))} />
+            <div className="flex gap-3">
+              <div className="w-28"><Input label="CAP" placeholder="00100" maxLength={5} value={recessoUserCap} onChange={e => setRecessoUserCap(e.target.value.replace(/\D/g, ''))} className="text-center" /></div>
+              <div className="flex-1"><Input label="Città" placeholder="Roma" value={recessoUserCity} onChange={e => setRecessoUserCity(capitalize(e.target.value))} /></div>
+            </div>
+            <div className="flex gap-3">
+              <div className="w-24"><Input label="Prov." placeholder="RM" maxLength={2} value={recessoUserProvince} onChange={e => setRecessoUserProvince(e.target.value.toUpperCase())} className="text-center" /></div>
+              <div className="flex-1"><Input label="Codice Fiscale" placeholder="RSSMRA80A01H501U" maxLength={16} value={recessoUserCF} onChange={e => setRecessoUserCF(e.target.value.toUpperCase())} /></div>
+            </div>
+          </div>
+        );
+        break;
+    }
+
+    return (
+      <ScreenLayout title={title} subtitle={subtitle} headerAction={<button onClick={goBack} className="bg-gray-100 p-2 rounded-full"><X size={24} /></button>}>
+        {content}
+        <NavigationBar onBack={handleRecessoStepBack} onNext={handleRecessoStepNext} nextLabel={recessoStep === 6 ? 'Anteprima' : undefined} />
+      </ScreenLayout>
+    );
+  }
+
+  // ============ RECESSO PREVIEW ============
+  if (currentScreen === Screen.RECESSO_PREVIEW) {
+    const user = data.user;
+    const address = recessoUserAddress || user.address;
+    const cap = recessoUserCap || user.cap;
+    const city = recessoUserCity || user.city;
+    const province = recessoUserProvince || user.province;
+    const cf = recessoUserCF || user.fiscalCode;
+    const fullName = `${user.firstName} ${user.lastName}`;
+    const today = new Date().toLocaleDateString('it-IT');
+
+    const previewSubject = `OGGETTO: Recesso dal contratto ${recessoContractType} n. ${recessoContractNumber} del ${recessoContractDate}`;
+    const previewBody = `Spett.le ${recessoCompanyName}
+${recessoCompanyAddress}
+PEC: ${recessoCompanyPec}
+
+Luogo e Data: ${city}, ${today}
+
+OGGETTO: Recesso dal contratto ${recessoContractType} n. ${recessoContractNumber} del ${recessoContractDate}
+
+Il/La sottoscritto/a ${fullName}, nato/a e residente in ${address}, ${cap} ${city} (${province}), C.F. ${cf},
+
+COMUNICA E FORMALIZZA
+
+la propria volontà di esercitare il diritto di recesso dal contratto menzionato in oggetto, nel pieno rispetto dei termini di preavviso previsti dagli accordi contrattuali.
+
+Vi invito pertanto a procedere alla cessazione del servizio e a disattivare ogni prestazione ad esso collegata a partire dalla data di scadenza del preavviso.
+
+Richiedo inoltre un riscontro scritto che attesti la ricezione della presente comunicazione e la data esatta di cessazione del contratto.
+
+Allego copia del mio documento di identità in corso di validità.
+
+Distinti saluti.
+
+${fullName}
+Firma`;
+
+    return (
+      <div className="h-[100dvh] bg-gray-50 flex flex-col relative overflow-hidden screen-enter">
+        <div className="bg-blue-700 text-white rounded-b-[3rem] shadow-lg pt-8 pb-10 flex flex-col px-6 shrink-0 z-10">
+          <div className="flex justify-between items-center mb-4">
+            <h1 className="text-2xl font-black">Anteprima PEC</h1>
+            <button onClick={goBack} className="bg-white/20 p-2 rounded-full"><X size={24} /></button>
+          </div>
+          <p className="text-blue-200 font-medium text-base">Rivedi prima di inviare</p>
+        </div>
+
+        <div className="px-5 -mt-6 flex-1 flex flex-col relative z-20 min-h-0 overflow-y-auto no-scrollbar pb-32">
+          <div className="bg-white rounded-[2rem] shadow-xl border border-gray-100 p-5 flex flex-col gap-4">
+            <div>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">A:</p>
+              <p className="text-lg font-bold text-gray-900">{recessoCompanyPec}</p>
+            </div>
+            <div className="h-px bg-gray-100" />
+            <div>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Oggetto:</p>
+              <p className="text-base font-bold text-blue-700 leading-snug">{previewSubject}</p>
+            </div>
+            <div className="h-px bg-gray-100" />
+            <div>
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Corpo:</p>
+              <pre className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap font-sans">{previewBody}</pre>
+            </div>
+          </div>
+        </div>
+
+        <div className="fixed bottom-0 left-0 right-0 p-5 bg-white border-t border-gray-100 z-30 flex flex-col gap-3">
+          <button onClick={handleSendRecesso} className="w-full py-5 bg-blue-600 text-white font-black text-xl rounded-2xl shadow-lg flex items-center justify-center gap-3 active:scale-95 transition-all">
+            <Send size={26} /> INVIA PEC
+          </button>
+          <button onClick={goBack} className="w-full py-3 bg-gray-100 text-gray-600 font-bold text-lg rounded-2xl active:scale-95 transition-all">
+            Modifica
+          </button>
+        </div>
+
+        {showRecessoSuccess && (
+          <div className="fixed inset-0 bg-white/95 z-[100] flex flex-col items-center justify-center p-6 animate-fade-in backdrop-blur-sm">
+            <div className="bg-green-100 p-8 rounded-full mb-6 text-green-600 animate-bounce shadow-xl"><CheckCircle2 size={80} /></div>
+            <h2 className="text-4xl font-black text-gray-900 mb-4 text-center">Inviata!</h2>
+            <p className="text-xl font-medium text-gray-500 text-center mb-8">La PEC di recesso è stata inviata.</p>
           </div>
         )}
       </div>
