@@ -39,6 +39,8 @@ import { Share } from '@capacitor/share';
 import { CapacitorHttp } from '@capacitor/core';
 import { PROVIDERS, CATEGORIES, getProvider } from './data/providers';
 import { Provider, ProviderCategory } from './data/providers';
+import { getFormOverlay, hasOverlay } from './data/formOverlays';
+import { fillOfficialModule } from './services/moduloFiller';
 
 enum Screen {
   WELCOME,
@@ -629,7 +631,7 @@ Firma`;
     }
   };
 
-  const handleDownloadModuloPdf = async (url: string, label: string) => {
+  const handleDownloadModuloPdf = async (url: string, provider: Provider) => {
     try {
       const res = await CapacitorHttp.get({
         url,
@@ -637,17 +639,40 @@ Firma`;
         connectTimeout: 30000,
         readTimeout: 60000,
       });
-      const data = res.data;
-      if (typeof data !== 'string' || data.length === 0) {
+      const resData = res.data;
+      if (typeof resData !== 'string' || resData.length === 0) {
         alert('Download non riuscito. Il modulo potrebbe non essere più disponibile.');
         return;
       }
-      const fileName = `Modulo_${label.replace(/[^a-zA-Z0-9]+/g, '_')}.pdf`;
-      await Filesystem.writeFile({ path: fileName, data, directory: Directory.Cache });
+      let base64 = resData;
+      let filled = false;
+      const overlay = getFormOverlay(provider.id);
+      if (overlay) {
+        const user = data.user;
+        try {
+          base64 = await fillOfficialModule(base64, overlay, {
+            fullName: `${user.firstName} ${user.lastName}`.trim(),
+            firstName: user.firstName,
+            lastName: user.lastName,
+            cf: recessoUserCF || user.fiscalCode || '',
+            address: recessoUserAddress || user.address || '',
+            cap: recessoUserCap || user.cap || '',
+            city: recessoUserCity || user.city || '',
+            province: recessoUserProvince || user.province || '',
+            contractNumber: recessoContractNumber,
+            date: new Date().toLocaleDateString('it-IT'),
+          });
+          filled = true;
+        } catch (e) {
+          console.warn('Overlay fill failed, sharing original', e);
+        }
+      }
+      const fileName = `Modulo_${provider.name.replace(/[^a-zA-Z0-9]+/g, '_')}.pdf`;
+      await Filesystem.writeFile({ path: fileName, data: base64, directory: Directory.Cache });
       const uri = await Filesystem.getUri({ path: fileName, directory: Directory.Cache });
       await Share.share({
-        title: `Modulo di recesso - ${label}`,
-        text: `Modulo ufficiale di recesso ${label}`,
+        title: filled ? `Modulo compilato - ${provider.name}` : `Modulo di recesso - ${provider.name}`,
+        text: filled ? `Modulo ufficiale di recesso ${provider.name} compilato con i tuoi dati` : `Modulo ufficiale di recesso ${provider.name}`,
         url: uri.uri,
         dialogTitle: 'Condividi modulo ufficiale',
       });
@@ -1591,6 +1616,7 @@ Firma`;
                         <p className="font-black text-lg text-gray-900 truncate">{p.name}</p>
                         <div className="flex flex-wrap gap-1.5 mt-1.5">
                           {p.pec && <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200">PEC</span>}
+                          {hasOverlay(p) && <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200">Compilabile</span>}
                           {p.modulisticaUrl && <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">Modulo ufficiale</span>}
                           {p.recessoUrl && <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200">Portale</span>}
                         </div>
@@ -1710,6 +1736,7 @@ Firma`;
     const officialUrl = provider ? (provider.recessoUrl || provider.modulisticaUrl) : undefined;
     const hasPec = !!recessoCompanyPec.trim();
     const hasModuloPdf = !!provider?.moduloPdfUrl;
+    const canFill = provider ? hasOverlay(provider) : false;
 
     const previewSubject = `OGGETTO: Recesso dal contratto ${recessoContractType} n. ${recessoContractNumber} del ${recessoContractDate}`;
     const previewBody = buildRecessoBody();
@@ -1725,13 +1752,13 @@ Firma`;
         </div>
 
         <div className="px-5 -mt-6 flex-1 flex flex-col relative z-20 min-h-0 overflow-y-auto no-scrollbar pb-32">
-          {hasModuloPdf && (
-            <button onClick={() => handleDownloadModuloPdf(provider!.moduloPdfUrl!, provider!.name)} className="w-full mb-3 bg-orange-500 text-white rounded-[1.5rem] shadow-lg shadow-orange-100 px-5 py-4 flex items-center justify-between gap-3 active:scale-95 transition-all">
+          {hasModuloPdf && provider && (
+            <button onClick={() => handleDownloadModuloPdf(provider.moduloPdfUrl!, provider)} className="w-full mb-3 bg-orange-500 text-white rounded-[1.5rem] shadow-lg shadow-orange-100 px-5 py-4 flex items-center justify-between gap-3 active:scale-95 transition-all">
               <div className="flex items-center gap-3">
                 <div className="bg-white/20 p-2.5 rounded-xl"><Download size={24} /></div>
                 <div className="text-left">
-                  <p className="font-black text-lg leading-tight">Scarica il modulo ufficiale</p>
-                  <p className="text-orange-100 text-sm font-medium leading-tight">PDF di recesso di {provider?.name}</p>
+                  <p className="font-black text-lg leading-tight">{canFill ? 'Compila e scarica il modulo' : 'Scarica il modulo ufficiale'}</p>
+                  <p className="text-orange-100 text-sm font-medium leading-tight">Modulo di recesso di {provider.name}</p>
                 </div>
               </div>
               <ChevronRight size={24} className="text-white shrink-0" />
