@@ -12,6 +12,8 @@ export interface OverlayData {
   province: string;
   contractNumber: string;
   date: string;
+  extras: Record<string, string>;
+  signatureDataUrl?: string | null;
 }
 
 function getValue(f: OverlayField, data: OverlayData): string {
@@ -28,6 +30,7 @@ function getValue(f: OverlayField, data: OverlayData): string {
     case 'date': return data.date;
     case 'firma': return data.fullName;
     case 'cfBoxes': return data.cf;
+    case 'extra': return f.extraKey ? (data.extras[f.extraKey] || '') : '';
     default: return '';
   }
 }
@@ -63,17 +66,32 @@ export async function fillOfficialModule(
 ): Promise<string> {
   const doc = await PDFDocument.load(base64ToBytes(base64), { ignoreEncryption: true });
   const font = await doc.embedFont(StandardFonts.Helvetica);
+  const signaturePng = data.signatureDataUrl
+    ? base64ToBytes(data.signatureDataUrl.split(',')[1] || '')
+    : null;
+  const signatureImg = signaturePng && signaturePng.length > 0
+    ? await doc.embedPng(signaturePng)
+    : null;
 
   for (const f of overlay.fields) {
     const value = getValue(f, data);
-    if (!value || !value.trim()) continue;
     const page = doc.getPage(f.page - 1);
 
     if (f.type === 'cfBoxes') {
+      if (!value.trim()) continue;
       drawCfBoxes(page, font, value, f);
     } else if (f.type === 'check') {
       page.drawText('X', { x: f.x, y: f.y - 2, size: f.size, font, color: rgb(0, 0, 0) });
+    } else if (f.type === 'firma') {
+      if (signatureImg) {
+        const w = f.width || 200;
+        const h = f.height || 30;
+        page.drawImage(signatureImg, { x: f.x, y: f.y - h + 4, width: w, height: h });
+      } else if (value.trim()) {
+        page.drawText(value, { x: f.x, y: f.y, size: f.size, font, color: rgb(0, 0, 0) });
+      }
     } else {
+      if (!value.trim()) continue;
       page.drawText(value, {
         x: f.x,
         y: f.y,

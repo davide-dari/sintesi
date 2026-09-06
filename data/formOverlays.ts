@@ -13,7 +13,8 @@ export type OverlayFieldType =
   | 'date'
   | 'firma'
   | 'check'
-  | 'cfBoxes';
+  | 'cfBoxes'
+  | 'extra';
 
 export interface OverlayField {
   type: OverlayFieldType;
@@ -24,6 +25,9 @@ export interface OverlayField {
   maxWidth?: number;
   boxW?: number;
   count?: number;
+  extraKey?: string;
+  width?: number;
+  height?: number;
 }
 
 export interface FormOverlay {
@@ -46,7 +50,7 @@ export const FORM_OVERLAYS: FormOverlay[] = [
       { type: 'city', page: 2, x: 130, y: 449, size: 11 },
       { type: 'date', page: 2, x: 310, y: 350, size: 11 },
       { type: 'date', page: 2, x: 155, y: 190, size: 11 },
-      { type: 'firma', page: 2, x: 370, y: 190, size: 11 },
+      { type: 'firma', page: 2, x: 370, y: 190, size: 11, width: 200, height: 35 },
     ],
   },
   {
@@ -61,9 +65,12 @@ export const FORM_OVERLAYS: FormOverlay[] = [
       { type: 'city', page: 1, x: 120, y: 513, size: 11 },
       { type: 'cap', page: 1, x: 290, y: 513, size: 11 },
       { type: 'province', page: 1, x: 460, y: 513, size: 11 },
+      { type: 'extra', extraKey: 'birthPlace', page: 1, x: 110, y: 563, size: 11 },
+      { type: 'extra', extraKey: 'birthDate', page: 1, x: 435, y: 563, size: 11 },
+      { type: 'extra', extraKey: 'email', page: 1, x: 90, y: 364, size: 11 },
       { type: 'contractNumber', page: 1, x: 200, y: 265, size: 11 },
       { type: 'date', page: 2, x: 100, y: 469, size: 11 },
-      { type: 'firma', page: 2, x: 390, y: 469, size: 11 },
+      { type: 'firma', page: 2, x: 351, y: 431, size: 11, width: 200, height: 38 },
     ],
   },
   {
@@ -73,13 +80,14 @@ export const FORM_OVERLAYS: FormOverlay[] = [
       { type: 'firstName', page: 1, x: 130, y: 735, size: 10 },
       { type: 'lastName', page: 1, x: 350, y: 735, size: 10 },
       { type: 'cf', page: 1, x: 170, y: 715, size: 10 },
+      { type: 'extra', extraKey: 'birthDate', page: 1, x: 420, y: 715, size: 10 },
       { type: 'address', page: 1, x: 115, y: 695, size: 10 },
       { type: 'city', page: 1, x: 180, y: 675, size: 10 },
       { type: 'province', page: 1, x: 460, y: 675, size: 10 },
       { type: 'cap', page: 1, x: 510, y: 675, size: 10 },
       { type: 'check', page: 1, x: 33, y: 602, size: 11 },
       { type: 'date', page: 1, x: 80, y: 204, size: 10 },
-      { type: 'firma', page: 1, x: 360, y: 204, size: 10 },
+      { type: 'firma', page: 1, x: 245, y: 136, size: 10, width: 200, height: 30 },
     ],
   },
   {
@@ -89,13 +97,14 @@ export const FORM_OVERLAYS: FormOverlay[] = [
       { type: 'firstName', page: 1, x: 130, y: 735, size: 10 },
       { type: 'lastName', page: 1, x: 350, y: 735, size: 10 },
       { type: 'cf', page: 1, x: 170, y: 715, size: 10 },
+      { type: 'extra', extraKey: 'birthDate', page: 1, x: 420, y: 715, size: 10 },
       { type: 'address', page: 1, x: 115, y: 695, size: 10 },
       { type: 'city', page: 1, x: 180, y: 675, size: 10 },
       { type: 'province', page: 1, x: 460, y: 675, size: 10 },
       { type: 'cap', page: 1, x: 510, y: 675, size: 10 },
       { type: 'check', page: 1, x: 33, y: 602, size: 11 },
       { type: 'date', page: 1, x: 80, y: 204, size: 10 },
-      { type: 'firma', page: 1, x: 360, y: 204, size: 10 },
+      { type: 'firma', page: 1, x: 245, y: 136, size: 10, width: 200, height: 30 },
     ],
   },
   {
@@ -104,14 +113,17 @@ export const FORM_OVERLAYS: FormOverlay[] = [
     fields: [
       { type: 'fullName', page: 1, x: 200, y: 688, size: 10 },
       { type: 'cfBoxes', page: 1, x: 107, y: 667, size: 9, boxW: 12.65, count: 16 },
+      { type: 'extra', extraKey: 'idType', page: 1, x: 185, y: 653, size: 10 },
+      { type: 'extra', extraKey: 'idNumber', page: 1, x: 340, y: 653, size: 10 },
       { type: 'contractNumber', page: 1, x: 300, y: 639, size: 10 },
       { type: 'address', page: 1, x: 240, y: 625, size: 10 },
       { type: 'city', page: 1, x: 400, y: 625, size: 10 },
       { type: 'province', page: 1, x: 120, y: 611, size: 10 },
       { type: 'cap', page: 1, x: 330, y: 611, size: 10 },
+      { type: 'extra', extraKey: 'phone', page: 1, x: 290, y: 597, size: 10 },
       { type: 'check', page: 1, x: 148, y: 513, size: 11 },
       { type: 'date', page: 1, x: 80, y: 221, size: 10 },
-      { type: 'firma', page: 1, x: 340, y: 221, size: 10 },
+      { type: 'firma', page: 1, x: 245, y: 136, size: 10, width: 200, height: 30 },
     ],
   },
   {
@@ -120,14 +132,17 @@ export const FORM_OVERLAYS: FormOverlay[] = [
     fields: [
       { type: 'fullName', page: 1, x: 200, y: 688, size: 10 },
       { type: 'cfBoxes', page: 1, x: 107, y: 664, size: 9, boxW: 12.65, count: 16 },
+      { type: 'extra', extraKey: 'idType', page: 1, x: 185, y: 652, size: 10 },
+      { type: 'extra', extraKey: 'idNumber', page: 1, x: 340, y: 652, size: 10 },
       { type: 'contractNumber', page: 1, x: 300, y: 640, size: 10 },
       { type: 'address', page: 1, x: 240, y: 628, size: 10 },
       { type: 'city', page: 1, x: 400, y: 628, size: 10 },
       { type: 'province', page: 1, x: 120, y: 617, size: 10 },
       { type: 'cap', page: 1, x: 330, y: 617, size: 10 },
+      { type: 'extra', extraKey: 'phone', page: 1, x: 290, y: 605, size: 10 },
       { type: 'check', page: 1, x: 148, y: 569, size: 11 },
       { type: 'date', page: 1, x: 80, y: 105, size: 10 },
-      { type: 'firma', page: 1, x: 340, y: 105, size: 10 },
+      { type: 'firma', page: 1, x: 245, y: 63, size: 10, width: 200, height: 30 },
     ],
   },
   {
@@ -144,7 +159,7 @@ export const FORM_OVERLAYS: FormOverlay[] = [
       { type: 'province', page: 1, x: 455, y: 688, size: 10 },
       { type: 'check', page: 1, x: 78, y: 610, size: 11 },
       { type: 'date', page: 1, x: 120, y: 52, size: 10 },
-      { type: 'firma', page: 1, x: 450, y: 52, size: 10 },
+      { type: 'firma', page: 1, x: 450, y: 22, size: 10, width: 130, height: 30 },
     ],
   },
   {
@@ -153,13 +168,20 @@ export const FORM_OVERLAYS: FormOverlay[] = [
     fields: [
       { type: 'firstName', page: 1, x: 60, y: 656, size: 10 },
       { type: 'lastName', page: 1, x: 330, y: 656, size: 10 },
+      { type: 'extra', extraKey: 'birthPlace', page: 1, x: 60, y: 642, size: 10 },
+      { type: 'extra', extraKey: 'birthDate', page: 1, x: 315, y: 642, size: 10 },
       { type: 'cf', page: 1, x: 440, y: 642, size: 10 },
       { type: 'address', page: 1, x: 85, y: 628, size: 10 },
       { type: 'city', page: 1, x: 330, y: 628, size: 10 },
+      { type: 'extra', extraKey: 'idType', page: 1, x: 205, y: 614, size: 10 },
+      { type: 'extra', extraKey: 'idNumber', page: 1, x: 395, y: 614, size: 10 },
+      { type: 'extra', extraKey: 'email', page: 1, x: 210, y: 600, size: 10 },
       { type: 'contractNumber', page: 1, x: 75, y: 558, size: 10 },
+      { type: 'extra', extraKey: 'motivo', page: 1, x: 36, y: 515, size: 10 },
+      { type: 'extra', extraKey: 'iban', page: 1, x: 110, y: 347, size: 10 },
       { type: 'city', page: 1, x: 60, y: 213, size: 10 },
       { type: 'date', page: 1, x: 235, y: 213, size: 10 },
-      { type: 'firma', page: 1, x: 415, y: 213, size: 10 },
+      { type: 'firma', page: 1, x: 409, y: 183, size: 10, width: 150, height: 30 },
     ],
   },
   {
@@ -171,7 +193,7 @@ export const FORM_OVERLAYS: FormOverlay[] = [
       { type: 'contractNumber', page: 1, x: 170, y: 542, size: 10 },
       { type: 'address', page: 1, x: 160, y: 514, size: 10 },
       { type: 'date', page: 1, x: 130, y: 241, size: 10 },
-      { type: 'firma', page: 1, x: 560, y: 241, size: 10 },
+      { type: 'firma', page: 1, x: 350, y: 163, size: 10, width: 200, height: 30 },
     ],
   },
   {
@@ -185,8 +207,10 @@ export const FORM_OVERLAYS: FormOverlay[] = [
       { type: 'cf', page: 1, x: 420, y: 639, size: 10 },
       { type: 'address', page: 1, x: 130, y: 609, size: 10 },
       { type: 'city', page: 1, x: 110, y: 580, size: 10 },
+      { type: 'extra', extraKey: 'email', page: 1, x: 340, y: 580, size: 10 },
+      { type: 'extra', extraKey: 'phone', page: 1, x: 110, y: 550, size: 10 },
       { type: 'date', page: 1, x: 80, y: 151, size: 10 },
-      { type: 'firma', page: 1, x: 360, y: 151, size: 10 },
+      { type: 'firma', page: 1, x: 360, y: 121, size: 10, width: 200, height: 30 },
     ],
   },
 ];

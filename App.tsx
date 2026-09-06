@@ -32,6 +32,7 @@ import {
 import { useAppStorage } from './services/storage';
 import { useUpdateChecker } from './services/updater';
 import { Button, Input, NavigationBar, ScreenLayout } from './components/UI';
+import { SignaturePad } from './components/SignaturePad';
 import { AppData, Medicine, DAYS_OF_WEEK } from './types';
 import { jsPDF } from 'jspdf';
 import { Filesystem, Directory } from '@capacitor/filesystem';
@@ -41,6 +42,7 @@ import { PROVIDERS, CATEGORIES, getProvider } from './data/providers';
 import { Provider, ProviderCategory } from './data/providers';
 import { getFormOverlay, hasOverlay } from './data/formOverlays';
 import { fillOfficialModule } from './services/moduloFiller';
+import { getExtrasForProvider, ExtraField } from './data/formExtras';
 
 enum Screen {
   WELCOME,
@@ -99,6 +101,8 @@ const App: React.FC = () => {
   const [recessoUserProvince, setRecessoUserProvince] = useState('');
   const [recessoUserCF, setRecessoUserCF] = useState('');
   const [recessoPod, setRecessoPod] = useState('');
+  const [recessoExtras, setRecessoExtras] = useState<Record<string, string>>({});
+  const [recessoSignature, setRecessoSignature] = useState<string | null>(null);
   const [showRecessoSuccess, setShowRecessoSuccess] = useState(false);
 
   const [showStudioDetails, setShowStudioDetails] = useState(false);
@@ -428,6 +432,8 @@ const App: React.FC = () => {
     setRecessoUserProvince(data.user.province || '');
     setRecessoUserCF(data.user.fiscalCode || '');
     setRecessoPod('');
+    setRecessoExtras({});
+    setRecessoSignature(null);
   };
 
   const selectRecessoProvider = (p: Provider) => {
@@ -661,6 +667,8 @@ Firma`;
             province: recessoUserProvince || user.province || '',
             contractNumber: recessoContractNumber,
             date: new Date().toLocaleDateString('it-IT'),
+            extras: recessoExtras,
+            signatureDataUrl: recessoSignature,
           });
           filled = true;
         } catch (e) {
@@ -1695,6 +1703,7 @@ Firma`;
       case 7:
         title = 'I tuoi dati';
         subtitle = 'Dati per il recesso (se non già inseriti)';
+        const extraFields = getExtrasForProvider(recessoProviderId);
         content = (
           <div className="flex flex-col gap-4 pb-20 animate-fade-in overflow-y-auto pt-2 no-scrollbar">
             <Input label="Indirizzo" placeholder="Via Roma 10" value={recessoUserAddress} onChange={e => setRecessoUserAddress(capitalize(e.target.value))} />
@@ -1708,6 +1717,16 @@ Firma`;
             </div>
             {(recessoContractType === 'Luce' || recessoContractType === 'Gas') && (
               <Input label={`Numero ${recessoContractType === 'Luce' ? 'POD' : 'PDR'} (se disponibile)`} placeholder={recessoContractType === 'Luce' ? 'IT001E...' : 'IT...'} value={recessoPod} onChange={e => setRecessoPod(e.target.value.toUpperCase())} />
+            )}
+            {extraFields.length > 0 && (
+              <div className="mt-2">
+                <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2">Richiesti dal modulo ufficiale</p>
+                <div className="flex flex-col gap-3">
+                  {extraFields.map(f => (
+                    <Input key={f.key} label={f.label} type={f.type === 'date' ? 'date' : (f.type === 'email' ? 'email' : f.type === 'tel' ? 'tel' : 'text')} placeholder={f.placeholder} value={recessoExtras[f.key] || ''} onChange={e => setRecessoExtras(prev => ({ ...prev, [f.key]: e.target.value }))} />
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         );
@@ -1789,6 +1808,13 @@ Firma`;
             <div className="mt-4 bg-blue-50 border border-blue-100 rounded-2xl p-4">
               <p className="text-xs font-bold text-blue-400 uppercase tracking-widest mb-1">Nota {provider.name}</p>
               <p className="text-sm text-blue-700 leading-relaxed">{provider.note}</p>
+            </div>
+          )}
+          {canFill && (
+            <div className="mt-4 bg-white rounded-[2rem] shadow-xl border border-gray-100 p-5">
+              <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Firma digitale</p>
+              <p className="text-gray-500 text-sm mb-3 leading-relaxed">Firma con il dito: verrà impressa sul modulo ufficiale di {provider?.name}. Se lasci vuoto, verrà usato il nome in chiaro.</p>
+              <SignaturePad value={recessoSignature} onChange={setRecessoSignature} />
             </div>
           )}
         </div>
