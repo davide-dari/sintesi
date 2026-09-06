@@ -14,6 +14,9 @@ const config: CapacitorConfig = {
       backgroundColor: '#0f766e',
       overlaysWebView: false,
     },
+    CapacitorHttp: {
+      enabled: true,
+    },
   },
 };
 

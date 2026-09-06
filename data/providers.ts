@@ -10,6 +10,7 @@ export interface Provider {
   address?: string;
   recessoUrl?: string;
   modulisticaUrl?: string;
+  moduloPdfUrl?: string;
   note?: string;
 }
 
@@ -30,6 +31,7 @@ export const PROVIDERS: Provider[] = [
     categoryLabel: 'Telefonia Mobile',
     contractTypes: ['Telefonia'],
     modulisticaUrl: 'https://www.tim.it/assistenza/info-consumatori/moduli',
+    moduloPdfUrl: 'https://risorsec.tim.it/content/dam/flytoco-areapubblica-aemfe/tim_it/assistenza/moduli/mobile/2_clienti_abbonamento/cessazione-contratto-abbonamento.pdf',
     address: 'Telecom Italia S.p.A., Via Gaetano Negri 1, 20123 Milano',
     note: 'Modulo di recesso disponibile nella modulistica TIM. Per la SIM la disdetta si fa anche via Codice di Migrazione con il nuovo operatore.',
   },
@@ -41,6 +43,7 @@ export const PROVIDERS: Provider[] = [
     contractTypes: ['Telefonia'],
     pec: 'servizioclienti@vodafone.pec.it',
     recessoUrl: 'https://privati.vodafone.it/privati/area-supporto/disdetta.html',
+    moduloPdfUrl: 'https://www.vodafone.it/nw/content/dam/webaem/privati-supporto/supporto-consumer/modulistica/Recesso_rete_fissa.pdf',
     address: 'Vodafone Italia S.p.A., Via Jervis 13, 10015 Ivrea (TO)',
   },
   {
@@ -51,6 +54,7 @@ export const PROVIDERS: Provider[] = [
     contractTypes: ['Telefonia'],
     pec: 'servizioclienti159@pec.windtre.it',
     modulisticaUrl: 'https://www.windtre.it/moduli-utili',
+    moduloPdfUrl: 'https://www.windtre.it/Document/moduli-utili/mobile/20240617/Modulo_Richiesta_Recesso_Contratto_Mobile_Privato_17062024.pdf',
     address: 'Wind Tre S.p.A., Via Monte Rosa 91, 20149 Milano',
   },
   {
@@ -71,6 +75,7 @@ export const PROVIDERS: Provider[] = [
     categoryLabel: 'Telefonia Mobile',
     contractTypes: ['Telefonia'],
     modulisticaUrl: 'https://www.iliad.it/modulistica.html',
+    moduloPdfUrl: 'https://www.iliad.it/docs/modulistica/fisson_con_mobile/comunicazione_di_recesso.pdf',
     address: 'Iliad Italia S.p.A., Viale Francesco Restelli 1/A, 20124 Milano',
     note: 'La disdetta si gestisce dalla propria Area Personale o con il Codice di Migrazione.',
   },
@@ -81,6 +86,7 @@ export const PROVIDERS: Provider[] = [
     categoryLabel: 'Telefonia Mobile',
     contractTypes: ['Telefonia'],
     modulisticaUrl: 'https://www.postemobile.it/assistenza/assistenza-privati/modulistica',
+    moduloPdfUrl: 'https://www.postemobile.it/Assistenza/ModulisticaPrivati/Richiesta%20recesso%20acquisto%20online.pdf',
     address: 'PostePay S.p.A., Viale Europa 175, 00144 Roma',
     note: 'È possibile anche la raccomandata a Casella Postale 3000, Verona.',
   },
@@ -151,6 +157,7 @@ export const PROVIDERS: Provider[] = [
     categoryLabel: 'Fisso e Internet',
     contractTypes: ['Telefonia', 'Internet'],
     modulisticaUrl: 'https://www.tim.it/assistenza/info-consumatori/moduli',
+    moduloPdfUrl: 'https://risorsec.tim.it/content/dam/flytoco-areapubblica-aemfe/tim_it/pdf/moduli/cessazione-linea-fissa.pdf',
     address: 'Telecom Italia S.p.A., Via Gaetano Negri 1, 20123 Milano',
   },
   {
@@ -171,6 +178,7 @@ export const PROVIDERS: Provider[] = [
     contractTypes: ['Internet', 'Telefonia'],
     pec: 'servizioclienti@vodafone.pec.it',
     recessoUrl: 'https://privati.vodafone.it/privati/area-supporto/disdetta.html',
+    moduloPdfUrl: 'https://www.vodafone.it/nw/content/dam/webaem/privati-supporto/supporto-consumer/modulistica/Recesso_rete_fissa.pdf',
     address: 'Vodafone Italia S.p.A., Via Jervis 13, 10015 Ivrea (TO)',
   },
   {
@@ -181,6 +189,7 @@ export const PROVIDERS: Provider[] = [
     contractTypes: ['Internet', 'Telefonia'],
     pec: 'servizioclienti159@pec.windtre.it',
     modulisticaUrl: 'https://www.windtre.it/moduli-utili',
+    moduloPdfUrl: 'https://www.windtre.it/Document/moduli-utili/fisso-privati/20240617/Modulo_Richiesta_Recesso_Servizio_Telefonia%20_Fissa_Consumer_17062024.pdf',
     address: 'Wind Tre S.p.A., Via Monte Rosa 91, 20149 Milano',
   },
   {
@@ -220,6 +229,7 @@ export const PROVIDERS: Provider[] = [
     categoryLabel: 'Luce e Gas',
     contractTypes: ['Luce', 'Gas'],
     modulisticaUrl: 'https://eniplenitude.com/info/segnalazione-eni-come-inviare',
+    moduloPdfUrl: 'https://eniplenitude.com/content/dam/plenitude-it/documenti/pdf/info/segnalazioni/moduli/Lettera_Modulo%20di%20richiesta%20di%20recesso.pdf',
     address: 'Eni Plenitude S.p.A., Via Giovanni Lorenzini 4, 20139 Milano',
     note: 'Serve POD (luce) / PDR (gas).',
   },
@@ -441,6 +451,7 @@ export const PROVIDERS: Provider[] = [
     categoryLabel: 'Calcio e Sport',
     contractTypes: ['Abbonamento'],
     recessoUrl: 'https://assistenza.sky.it/percorsi-guidati/disdetta-abbonamento',
+    moduloPdfUrl: 'https://assets.contentstack.io/v3/assets/blt6cd554d763453d19/bltd73e6b037f8d0466/5f4fb8e95acde4265bb2e382/Modulo_TV_Recesso_oltre14gg.pdf',
     address: 'Sky Italia S.r.l., Via Monte Rosa 91, 20149 Milano',
     note: 'Disdetta via telefono, online o modulo ufficiale inviato con raccomandata o PEC.',
   },

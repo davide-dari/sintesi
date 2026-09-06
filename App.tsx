@@ -36,6 +36,7 @@ import { AppData, Medicine, DAYS_OF_WEEK } from './types';
 import { jsPDF } from 'jspdf';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
+import { CapacitorHttp } from '@capacitor/core';
 import { PROVIDERS, CATEGORIES, getProvider } from './data/providers';
 import { Provider, ProviderCategory } from './data/providers';
 
@@ -95,6 +96,7 @@ const App: React.FC = () => {
   const [recessoUserCity, setRecessoUserCity] = useState('');
   const [recessoUserProvince, setRecessoUserProvince] = useState('');
   const [recessoUserCF, setRecessoUserCF] = useState('');
+  const [recessoPod, setRecessoPod] = useState('');
   const [showRecessoSuccess, setShowRecessoSuccess] = useState(false);
 
   const [showStudioDetails, setShowStudioDetails] = useState(false);
@@ -423,6 +425,7 @@ const App: React.FC = () => {
     setRecessoUserCity(data.user.city || '');
     setRecessoUserProvince(data.user.province || '');
     setRecessoUserCF(data.user.fiscalCode || '');
+    setRecessoPod('');
   };
 
   const selectRecessoProvider = (p: Provider) => {
@@ -466,7 +469,7 @@ OGGETTO: Recesso dal contratto ${recessoContractType} n. ${recessoContractNumber
 Il/La sottoscritto/a ${fullName}, nato/a e residente in ${address}, ${cap} ${city} (${province}), C.F. ${cf},
 
 COMUNICA E FORMALIZZA
-
+${recessoPod.trim() ? `\nIdentificativo fornitura: ${recessoPod.trim()}\n` : ''}
 la propria volontà di esercitare il diritto di recesso dal contratto menzionato in oggetto, nel pieno rispetto dei termini di preavviso previsti dagli accordi contrattuali.
 
 Vi invito pertanto a procedere alla cessazione del servizio e a disattivare ogni prestazione ad esso collegata a partire dalla data di scadenza del preavviso.
@@ -590,6 +593,7 @@ Firma`;
     left(`Il/La sottoscritto/a ${fullName}, nato/a e residente in ${address}, ${cap} ${city} (${province}), C.F. ${cf},`, 11);
     gap(12);
     left('COMUNICA E FORMALIZZA', 11, 'bold');
+    if (recessoPod.trim()) left(`Identificativo fornitura: ${recessoPod.trim()}`, 11);
     gap(12);
     left('la propria volontà di esercitare il diritto di recesso dal contratto menzionato in oggetto, nel pieno rispetto dei termini di preavviso previsti dagli accordi contrattuali.', 11);
     gap(10);
@@ -622,6 +626,33 @@ Firma`;
       });
     } catch (e) {
       alert('Errore durante la generazione o condivisione del PDF.');
+    }
+  };
+
+  const handleDownloadModuloPdf = async (url: string, label: string) => {
+    try {
+      const res = await CapacitorHttp.get({
+        url,
+        responseType: 'arraybuffer',
+        connectTimeout: 30000,
+        readTimeout: 60000,
+      });
+      const data = res.data;
+      if (typeof data !== 'string' || data.length === 0) {
+        alert('Download non riuscito. Il modulo potrebbe non essere più disponibile.');
+        return;
+      }
+      const fileName = `Modulo_${label.replace(/[^a-zA-Z0-9]+/g, '_')}.pdf`;
+      await Filesystem.writeFile({ path: fileName, data, directory: Directory.Cache });
+      const uri = await Filesystem.getUri({ path: fileName, directory: Directory.Cache });
+      await Share.share({
+        title: `Modulo di recesso - ${label}`,
+        text: `Modulo ufficiale di recesso ${label}`,
+        url: uri.uri,
+        dialogTitle: 'Condividi modulo ufficiale',
+      });
+    } catch (e) {
+      alert('Impossibile scaricare il modulo. Verifica la connessione o usa il pulsante "Apri sul sito".');
     }
   };
 
@@ -1649,6 +1680,9 @@ Firma`;
               <div className="w-24"><Input label="Prov." placeholder="RM" maxLength={2} value={recessoUserProvince} onChange={e => setRecessoUserProvince(e.target.value.toUpperCase())} className="text-center" /></div>
               <div className="flex-1"><Input label="Codice Fiscale" placeholder="RSSMRA80A01H501U" maxLength={16} value={recessoUserCF} onChange={e => setRecessoUserCF(e.target.value.toUpperCase())} /></div>
             </div>
+            {(recessoContractType === 'Luce' || recessoContractType === 'Gas') && (
+              <Input label={`Numero ${recessoContractType === 'Luce' ? 'POD' : 'PDR'} (se disponibile)`} placeholder={recessoContractType === 'Luce' ? 'IT001E...' : 'IT...'} value={recessoPod} onChange={e => setRecessoPod(e.target.value.toUpperCase())} />
+            )}
           </div>
         );
         break;
@@ -1675,6 +1709,7 @@ Firma`;
     const provider = recessoProviderId ? getProvider(recessoProviderId) : undefined;
     const officialUrl = provider ? (provider.recessoUrl || provider.modulisticaUrl) : undefined;
     const hasPec = !!recessoCompanyPec.trim();
+    const hasModuloPdf = !!provider?.moduloPdfUrl;
 
     const previewSubject = `OGGETTO: Recesso dal contratto ${recessoContractType} n. ${recessoContractNumber} del ${recessoContractDate}`;
     const previewBody = buildRecessoBody();
@@ -1690,16 +1725,21 @@ Firma`;
         </div>
 
         <div className="px-5 -mt-6 flex-1 flex flex-col relative z-20 min-h-0 overflow-y-auto no-scrollbar pb-32">
-          {officialUrl && (
-            <button onClick={() => window.open(officialUrl, '_blank')} className="w-full mb-4 bg-orange-500 text-white rounded-[1.5rem] shadow-lg shadow-orange-100 px-5 py-4 flex items-center justify-between gap-3 active:scale-95 transition-all">
+          {hasModuloPdf && (
+            <button onClick={() => handleDownloadModuloPdf(provider!.moduloPdfUrl!, provider!.name)} className="w-full mb-3 bg-orange-500 text-white rounded-[1.5rem] shadow-lg shadow-orange-100 px-5 py-4 flex items-center justify-between gap-3 active:scale-95 transition-all">
               <div className="flex items-center gap-3">
-                <div className="bg-white/20 p-2.5 rounded-xl"><FileText size={24} /></div>
+                <div className="bg-white/20 p-2.5 rounded-xl"><Download size={24} /></div>
                 <div className="text-left">
-                  <p className="font-black text-lg leading-tight">Modulo ufficiale</p>
-                  <p className="text-orange-100 text-sm font-medium leading-tight">Apri il modulo/portale di {provider?.name}</p>
+                  <p className="font-black text-lg leading-tight">Scarica il modulo ufficiale</p>
+                  <p className="text-orange-100 text-sm font-medium leading-tight">PDF di recesso di {provider?.name}</p>
                 </div>
               </div>
               <ChevronRight size={24} className="text-white shrink-0" />
+            </button>
+          )}
+          {officialUrl && (
+            <button onClick={() => window.open(officialUrl, '_blank')} className="w-full mb-4 bg-white text-orange-600 border-2 border-orange-200 rounded-[1.5rem] px-5 py-3 flex items-center justify-center gap-3 active:scale-95 transition-all">
+              <FileText size={20} /> Apri sul sito
             </button>
           )}
           <div className="bg-white rounded-[2rem] shadow-xl border border-gray-100 p-5 flex flex-col gap-4">
