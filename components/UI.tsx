@@ -39,7 +39,8 @@ export const NavigationBar: React.FC<{
   onBack?: () => void; 
   onNext?: () => void; 
   nextDisabled?: boolean;
-}> = ({ onBack, onNext, nextDisabled }) => (
+  nextLabel?: string;
+}> = ({ onBack, onNext, nextDisabled, nextLabel }) => (
   <div className="fixed bottom-0 left-0 right-0 z-20 flex justify-center bg-transparent pointer-events-none">
     <div className="w-full flex justify-between items-center px-4 pt-4 bg-white/90 backdrop-blur-sm border-t border-gray-100 pointer-events-auto" style={{ paddingBottom: 'calc(2.5rem + var(--sab))' }}>
       <div className="pointer-events-auto">
@@ -60,8 +61,8 @@ export const NavigationBar: React.FC<{
             disabled={nextDisabled}
             className="flex items-center justify-center bg-teal-600 text-white hover:bg-teal-700 rounded-xl px-6 py-3 shadow-md gap-2 font-bold disabled:opacity-50 disabled:grayscale"
           >
-             Avanti
-             <ChevronRight size={20} />
+            {nextLabel || 'Avanti'}
+            <ChevronRight size={20} />
           </button>
         )}
       </div>

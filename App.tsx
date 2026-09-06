@@ -36,6 +36,8 @@ import { AppData, Medicine, DAYS_OF_WEEK } from './types';
 import { jsPDF } from 'jspdf';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
+import { PROVIDERS, CATEGORIES, getProvider } from './data/providers';
+import { Provider, ProviderCategory } from './data/providers';
 
 enum Screen {
   WELCOME,
@@ -78,6 +80,10 @@ const App: React.FC = () => {
   const [mobileInput, setMobileInput] = useState('');
 
   const [recessoStep, setRecessoStep] = useState(0);
+  const [recessoProviderId, setRecessoProviderId] = useState<string | null>(null);
+  const [recessoManual, setRecessoManual] = useState(false);
+  const [recessoSearch, setRecessoSearch] = useState('');
+  const [recessoCategory, setRecessoCategory] = useState<'all' | ProviderCategory>('all');
   const [recessoContractType, setRecessoContractType] = useState('');
   const [recessoContractNumber, setRecessoContractNumber] = useState('');
   const [recessoContractDate, setRecessoContractDate] = useState('');
@@ -402,6 +408,10 @@ const App: React.FC = () => {
 
   const resetRecessoWizard = () => {
     setRecessoStep(0);
+    setRecessoProviderId(null);
+    setRecessoManual(false);
+    setRecessoSearch('');
+    setRecessoCategory('all');
     setRecessoContractType('');
     setRecessoContractNumber('');
     setRecessoContractDate('');
@@ -415,7 +425,26 @@ const App: React.FC = () => {
     setRecessoUserCF(data.user.fiscalCode || '');
   };
 
-  const generateRecessoMailto = () => {
+  const selectRecessoProvider = (p: Provider) => {
+    setRecessoProviderId(p.id);
+    setRecessoManual(false);
+    setRecessoCompanyName(p.name);
+    setRecessoCompanyAddress(p.address || '');
+    setRecessoCompanyPec(p.pec || '');
+    if (!recessoContractType && p.contractTypes.length > 0) setRecessoContractType(p.contractTypes[0]);
+    setRecessoStep(1);
+  };
+
+  const selectRecessoManual = () => {
+    setRecessoProviderId(null);
+    setRecessoManual(true);
+    setRecessoCompanyName('');
+    setRecessoCompanyAddress('');
+    setRecessoCompanyPec('');
+    setRecessoStep(1);
+  };
+
+  const buildRecessoBody = () => {
     const user = data.user;
     const address = recessoUserAddress || user.address;
     const cap = recessoUserCap || user.cap;
@@ -423,19 +452,18 @@ const App: React.FC = () => {
     const province = recessoUserProvince || user.province;
     const cf = recessoUserCF || user.fiscalCode;
     const fullName = `${user.firstName} ${user.lastName}`;
-    const fullAddress = `${address}, ${cap} ${city} (${province})`;
 
-    const subject = `OGGETTO: Recesso dal contratto ${recessoContractType} n. ${recessoContractNumber} del ${recessoContractDate}`;
+    const recipientLines = [`Spett.le ${recessoCompanyName}`];
+    if (recessoCompanyAddress.trim()) recipientLines.push(recessoCompanyAddress);
+    if (recessoCompanyPec.trim()) recipientLines.push(`PEC: ${recessoCompanyPec}`);
 
-    const body = `Spett.le ${recessoCompanyName}
-${recessoCompanyAddress}
-PEC: ${recessoCompanyPec}
+    return `${recipientLines.join('\n')}
 
 Luogo e Data: ${city}, ${new Date().toLocaleDateString('it-IT')}
 
 OGGETTO: Recesso dal contratto ${recessoContractType} n. ${recessoContractNumber} del ${recessoContractDate}
 
-Il/La sottoscritto/a ${fullName}, nato/a e residente in ${fullAddress}, C.F. ${cf},
+Il/La sottoscritto/a ${fullName}, nato/a e residente in ${address}, ${cap} ${city} (${province}), C.F. ${cf},
 
 COMUNICA E FORMALIZZA
 
@@ -451,18 +479,34 @@ Distinti saluti.
 
 ${fullName}
 Firma`;
+  };
 
-    return `mailto:${recessoCompanyPec}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  const generateRecessoMailto = () => {
+    const subject = `OGGETTO: Recesso dal contratto ${recessoContractType} n. ${recessoContractNumber} del ${recessoContractDate}`;
+
+    return `mailto:${recessoCompanyPec}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(buildRecessoBody())}`;
+  };
+
+  const getRecessoVisibleSteps = () => {
+    const provider = recessoProviderId ? getProvider(recessoProviderId) : undefined;
+    return provider ? [0, 1, 2, 3, 7] : [0, 1, 2, 3, 4, 5, 6, 7];
   };
 
   const handleRecessoStepNext = () => {
-    if (recessoStep === 0 && !recessoContractType) { alert('Seleziona il tipo di contratto'); return; }
-    if (recessoStep === 1 && !recessoContractNumber.trim()) { alert('Inserisci il numero del contratto'); return; }
-    if (recessoStep === 2 && !recessoContractDate) { alert('Inserisci la data del contratto'); return; }
-    if (recessoStep === 3 && !recessoCompanyName.trim()) { alert('Inserisci il nome dell\'azienda'); return; }
-    if (recessoStep === 4 && !recessoCompanyAddress.trim()) { alert('Inserisci l\'indirizzo dell\'azienda'); return; }
-    if (recessoStep === 5 && !recessoCompanyPec.trim()) { alert('Inserisci la PEC dell\'azienda'); return; }
-    if (recessoStep < 6) setRecessoStep(recessoStep + 1);
+    const visible = getRecessoVisibleSteps();
+    const logical = visible[recessoStep];
+    if (logical === 0) {
+      if (!recessoProviderId && !recessoManual) { alert('Seleziona un\'azienda oppure usa "Altra azienda".'); return; }
+      setRecessoStep(1);
+      return;
+    }
+    if (logical === 1 && !recessoContractType) { alert('Seleziona il tipo di contratto'); return; }
+    if (logical === 2 && !recessoContractNumber.trim()) { alert('Inserisci il numero del contratto'); return; }
+    if (logical === 3 && !recessoContractDate) { alert('Inserisci la data del contratto'); return; }
+    if (logical === 4 && !recessoCompanyName.trim()) { alert('Inserisci il nome dell\'azienda'); return; }
+    if (logical === 5 && !recessoCompanyAddress.trim()) { alert('Inserisci l\'indirizzo dell\'azienda'); return; }
+    if (logical === 6 && !recessoCompanyPec.trim()) { alert('Inserisci la PEC dell\'azienda'); return; }
+    if (recessoStep < visible.length - 1) setRecessoStep(recessoStep + 1);
     else goToScreen(Screen.RECESSO_PREVIEW);
   };
 
@@ -1472,8 +1516,68 @@ Firma`;
   if (currentScreen === Screen.RECESSO_WIZARD) {
     let title = '', subtitle = '', content = null;
 
-    switch (recessoStep) {
-      case 0:
+    const visibleSteps = getRecessoVisibleSteps();
+    const logical = visibleSteps[recessoStep];
+    const isLast = recessoStep === visibleSteps.length - 1;
+
+    switch (logical) {
+      case 0: {
+        title = 'Seleziona Azienda';
+        subtitle = 'Scegli il provider del tuo contratto';
+        const filtered = PROVIDERS.filter(p => {
+          if (recessoCategory !== 'all' && p.category !== recessoCategory) return false;
+          if (recessoSearch && !p.name.toLowerCase().includes(recessoSearch.toLowerCase())) return false;
+          return true;
+        });
+        const grouped = CATEGORIES.map(c => ({
+          cat: c,
+          items: filtered.filter(p => p.category === c.id),
+        })).filter(g => g.items.length > 0);
+        content = (
+          <div className="flex flex-col gap-3 animate-fade-in pb-24">
+            <input
+              value={recessoSearch}
+              onChange={e => setRecessoSearch(e.target.value)}
+              placeholder="Cerca azienda..."
+              className="w-full px-4 py-3 rounded-xl border-2 border-blue-100 focus:border-blue-500 outline-none transition-all text-lg bg-white text-gray-900 placeholder:text-gray-400"
+            />
+            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1 -mx-1 px-1">
+              <button onClick={() => setRecessoCategory('all')} className={`shrink-0 px-4 py-2 rounded-full border-2 font-bold text-sm transition-all ${recessoCategory === 'all' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-200 text-gray-600'}`}>Tutte</button>
+              {CATEGORIES.map(c => (
+                <button key={c.id} onClick={() => setRecessoCategory(c.id)} className={`shrink-0 px-4 py-2 rounded-full border-2 font-bold text-sm transition-all ${recessoCategory === c.id ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-gray-200 text-gray-600'}`}>{c.icon} {c.label}</button>
+              ))}
+            </div>
+            {grouped.length === 0 && (
+              <div className="text-center py-10 text-gray-400 font-medium">Nessuna azienda trovata</div>
+            )}
+            {grouped.map(g => (
+              <div key={g.cat.id}>
+                <p className="text-sm font-bold text-gray-400 uppercase tracking-widest px-1 mb-2 mt-3">{g.cat.icon} {g.cat.label}</p>
+                <div className="flex flex-col gap-2">
+                  {g.items.map(p => (
+                    <button key={p.id} onClick={() => selectRecessoProvider(p)} className="w-full p-4 rounded-2xl border-2 border-gray-200 bg-white active:scale-95 transition-all text-left flex items-center justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-black text-lg text-gray-900 truncate">{p.name}</p>
+                        <div className="flex flex-wrap gap-1.5 mt-1.5">
+                          {p.pec && <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200">PEC</span>}
+                          {p.modulisticaUrl && <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200">Modulo ufficiale</span>}
+                          {p.recessoUrl && <span className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-orange-50 text-orange-700 border border-orange-200">Portale</span>}
+                        </div>
+                      </div>
+                      <ChevronRight size={22} className="text-gray-300 shrink-0" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
+            <button onClick={selectRecessoManual} className="w-full p-4 rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50 active:scale-95 transition-all text-center">
+              <span className="font-bold text-gray-500">Altra azienda (compila a mano)</span>
+            </button>
+          </div>
+        );
+        break;
+      }
+      case 1:
         title = 'Tipo di Contratto';
         subtitle = 'Che tipo di contratto vuoi recedere?';
         content = (
@@ -1486,7 +1590,7 @@ Firma`;
           </div>
         );
         break;
-      case 1:
+      case 2:
         title = 'Numero Contratto';
         subtitle = 'Il numero identificativo del contratto';
         content = (
@@ -1495,7 +1599,7 @@ Firma`;
           </div>
         );
         break;
-      case 2:
+      case 3:
         title = 'Data Contratto';
         subtitle = 'Quando è stato stipulato?';
         content = (
@@ -1504,7 +1608,7 @@ Firma`;
           </div>
         );
         break;
-      case 3:
+      case 4:
         title = 'Nome Azienda';
         subtitle = 'La ragione sociale dell\'azienda';
         content = (
@@ -1513,7 +1617,7 @@ Firma`;
           </div>
         );
         break;
-      case 4:
+      case 5:
         title = 'Indirizzo Azienda';
         subtitle = 'Dove si trova l\'azienda';
         content = (
@@ -1522,7 +1626,7 @@ Firma`;
           </div>
         );
         break;
-      case 5:
+      case 6:
         title = 'PEC Azienda';
         subtitle = 'Indirizzo PEC per invio recesso';
         content = (
@@ -1531,7 +1635,7 @@ Firma`;
           </div>
         );
         break;
-      case 6:
+      case 7:
         title = 'I tuoi dati';
         subtitle = 'Dati per il recesso (se non già inseriti)';
         content = (
@@ -1553,7 +1657,7 @@ Firma`;
     return (
       <ScreenLayout title={title} subtitle={subtitle} headerAction={<button onClick={goBack} className="bg-gray-100 p-2 rounded-full"><X size={24} /></button>}>
         {content}
-        <NavigationBar onBack={handleRecessoStepBack} onNext={handleRecessoStepNext} nextLabel={recessoStep === 6 ? 'Anteprima' : undefined} />
+        <NavigationBar onBack={handleRecessoStepBack} onNext={recessoStep === 0 ? undefined : handleRecessoStepNext} nextLabel={isLast ? 'Anteprima' : undefined} />
       </ScreenLayout>
     );
   }
@@ -1568,48 +1672,40 @@ Firma`;
     const cf = recessoUserCF || user.fiscalCode;
     const fullName = `${user.firstName} ${user.lastName}`;
     const today = new Date().toLocaleDateString('it-IT');
+    const provider = recessoProviderId ? getProvider(recessoProviderId) : undefined;
+    const officialUrl = provider ? (provider.recessoUrl || provider.modulisticaUrl) : undefined;
+    const hasPec = !!recessoCompanyPec.trim();
 
     const previewSubject = `OGGETTO: Recesso dal contratto ${recessoContractType} n. ${recessoContractNumber} del ${recessoContractDate}`;
-    const previewBody = `Spett.le ${recessoCompanyName}
-${recessoCompanyAddress}
-PEC: ${recessoCompanyPec}
-
-Luogo e Data: ${city}, ${today}
-
-OGGETTO: Recesso dal contratto ${recessoContractType} n. ${recessoContractNumber} del ${recessoContractDate}
-
-Il/La sottoscritto/a ${fullName}, nato/a e residente in ${address}, ${cap} ${city} (${province}), C.F. ${cf},
-
-COMUNICA E FORMALIZZA
-
-la propria volontà di esercitare il diritto di recesso dal contratto menzionato in oggetto, nel pieno rispetto dei termini di preavviso previsti dagli accordi contrattuali.
-
-Vi invito pertanto a procedere alla cessazione del servizio e a disattivare ogni prestazione ad esso collegata a partire dalla data di scadenza del preavviso.
-
-Richiedo inoltre un riscontro scritto che attesti la ricezione della presente comunicazione e la data esatta di cessazione del contratto.
-
-Allego copia del mio documento di identità in corso di validità.
-
-Distinti saluti.
-
-${fullName}
-Firma`;
+    const previewBody = buildRecessoBody();
 
     return (
       <div className="h-[100dvh] bg-gray-50 flex flex-col relative overflow-hidden screen-enter">
         <div className="bg-blue-700 text-white rounded-b-[3rem] shadow-lg pt-8 pb-10 flex flex-col px-6 shrink-0 z-10">
           <div className="flex justify-between items-center mb-4">
-            <h1 className="text-2xl font-black">Anteprima PEC</h1>
+            <h1 className="text-2xl font-black">Anteprima</h1>
             <button onClick={goBack} className="bg-white/20 p-2 rounded-full"><X size={24} /></button>
           </div>
           <p className="text-blue-200 font-medium text-base">Rivedi prima di inviare</p>
         </div>
 
         <div className="px-5 -mt-6 flex-1 flex flex-col relative z-20 min-h-0 overflow-y-auto no-scrollbar pb-32">
+          {officialUrl && (
+            <button onClick={() => window.open(officialUrl, '_blank')} className="w-full mb-4 bg-orange-500 text-white rounded-[1.5rem] shadow-lg shadow-orange-100 px-5 py-4 flex items-center justify-between gap-3 active:scale-95 transition-all">
+              <div className="flex items-center gap-3">
+                <div className="bg-white/20 p-2.5 rounded-xl"><FileText size={24} /></div>
+                <div className="text-left">
+                  <p className="font-black text-lg leading-tight">Modulo ufficiale</p>
+                  <p className="text-orange-100 text-sm font-medium leading-tight">Apri il modulo/portale di {provider?.name}</p>
+                </div>
+              </div>
+              <ChevronRight size={24} className="text-white shrink-0" />
+            </button>
+          )}
           <div className="bg-white rounded-[2rem] shadow-xl border border-gray-100 p-5 flex flex-col gap-4">
             <div>
               <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">A:</p>
-              <p className="text-lg font-bold text-gray-900">{recessoCompanyPec}</p>
+              <p className="text-lg font-bold text-gray-900">{recessoCompanyPec || '— (nessuna PEC)'}</p>
             </div>
             <div className="h-px bg-gray-100" />
             <div>
@@ -1622,12 +1718,24 @@ Firma`;
               <pre className="text-sm text-gray-700 leading-relaxed whitespace-pre-wrap font-sans">{previewBody}</pre>
             </div>
           </div>
+          {provider?.note && (
+            <div className="mt-4 bg-blue-50 border border-blue-100 rounded-2xl p-4">
+              <p className="text-xs font-bold text-blue-400 uppercase tracking-widest mb-1">Nota {provider.name}</p>
+              <p className="text-sm text-blue-700 leading-relaxed">{provider.note}</p>
+            </div>
+          )}
         </div>
 
         <div className="fixed bottom-0 left-0 right-0 p-5 bg-white border-t border-gray-100 z-30 flex flex-col gap-3">
-          <button onClick={handleSendRecesso} className="w-full py-5 bg-blue-600 text-white font-black text-xl rounded-2xl shadow-lg flex items-center justify-center gap-3 active:scale-95 transition-all">
-            <Send size={26} /> INVIA PEC
-          </button>
+          {hasPec ? (
+            <button onClick={handleSendRecesso} className="w-full py-5 bg-blue-600 text-white font-black text-xl rounded-2xl shadow-lg flex items-center justify-center gap-3 active:scale-95 transition-all">
+              <Send size={26} /> INVIA PEC
+            </button>
+          ) : (
+            <div className="w-full py-3 bg-gray-50 border border-gray-200 text-gray-500 font-semibold text-sm rounded-2xl text-center px-4">
+              Questo servizio non accetta PEC: usa il modulo ufficiale o scarica il PDF.
+            </div>
+          )}
           <button onClick={handleShareRecessoPdf} className="w-full py-4 bg-gray-100 text-gray-700 font-bold text-lg rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition-all">
             <FileText size={24} /> Scarica PDF
           </button>
