@@ -1,5 +1,5 @@
 
-export const APP_VERSION = '2.2';
+export const APP_VERSION = '2.3';
 
 export interface Medicine {
   id: string;

@@ -33,6 +33,9 @@ import { useAppStorage } from './services/storage';
 import { useUpdateChecker } from './services/updater';
 import { Button, Input, NavigationBar, ScreenLayout } from './components/UI';
 import { AppData, Medicine, DAYS_OF_WEEK } from './types';
+import { jsPDF } from 'jspdf';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 enum Screen {
   WELCOME,
@@ -491,6 +494,91 @@ Firma`;
         setCurrentScreen(Screen.HOME);
       }
     }, 2500);
+  };
+
+  const handleShareRecessoPdf = async () => {
+    const user = data.user;
+    const address = recessoUserAddress || user.address;
+    const cap = recessoUserCap || user.cap;
+    const city = recessoUserCity || user.city;
+    const province = recessoUserProvince || user.province;
+    const cf = recessoUserCF || user.fiscalCode;
+    const fullName = `${user.firstName} ${user.lastName}`;
+    const today = new Date().toLocaleDateString('it-IT');
+
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+    const margin = 56;
+    let y = margin;
+
+    const left = (text: string, size = 12, style: 'normal' | 'bold' = 'normal', color: [number, number, number] = [33, 37, 41]) => {
+      doc.setFont('helvetica', style);
+      doc.setFontSize(size);
+      doc.setTextColor(color[0], color[1], color[2]);
+      const lines = doc.splitTextToSize(text, pageW - margin * 2);
+      doc.text(lines, margin, y);
+      y += lines.length * (size * 1.35);
+      return y;
+    };
+    const gap = (h: number) => { y += h; };
+
+    doc.setFillColor(21, 94, 200);
+    doc.rect(0, 0, pageW, 110, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(22);
+    doc.text('DICHIARAZIONE DI RECESSO', margin, 50);
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text('Sintesi - Recesso Facile', margin, 78);
+    y = 140;
+
+    left(`Spett.le ${recessoCompanyName}`, 13, 'bold');
+    left(recessoCompanyAddress, 11);
+    left(`PEC: ${recessoCompanyPec}`, 11);
+    gap(18);
+    left(`Luogo e Data: ${city}, ${today}`, 11);
+    gap(14);
+    left(`Oggetto: Recesso dal contratto ${recessoContractType} n. ${recessoContractNumber} del ${recessoContractDate}`, 11, 'bold', [21, 94, 200]);
+    gap(16);
+
+    left(`Il/La sottoscritto/a ${fullName}, nato/a e residente in ${address}, ${cap} ${city} (${province}), C.F. ${cf},`, 11);
+    gap(12);
+    left('COMUNICA E FORMALIZZA', 11, 'bold');
+    gap(12);
+    left('la propria volontà di esercitare il diritto di recesso dal contratto menzionato in oggetto, nel pieno rispetto dei termini di preavviso previsti dagli accordi contrattuali.', 11);
+    gap(10);
+    left('Vi invito pertanto a procedere alla cessazione del servizio e a disattivare ogni prestazione ad esso collegata a partire dalla data di scadenza del preavviso.', 11);
+    gap(10);
+    left('Richiedo inoltre un riscontro scritto che attesti la ricezione della presente comunicazione e la data esatta di cessazione del contratto.', 11);
+    gap(10);
+    left('Allego copia del mio documento di identità in corso di validità.', 11);
+    gap(22);
+    left('Distinti saluti.', 11);
+    gap(40);
+    left(fullName, 12, 'bold');
+    left('Firma', 11);
+
+    const fileName = `Recesso_${recessoCompanyName.replace(/[^a-zA-Z0-9]+/g, '_')}_${recessoContractNumber.replace(/[^a-zA-Z0-9]+/g, '_')}.pdf`;
+    const base64 = doc.output('datauristring').split(',')[1];
+
+    try {
+      await Filesystem.writeFile({
+        path: fileName,
+        data: base64,
+        directory: Directory.Cache,
+      });
+      const uri = await Filesystem.getUri({ path: fileName, directory: Directory.Cache });
+      await Share.share({
+        title: 'Dichiarazione di Recesso',
+        text: `Recesso contratto ${recessoContractType} n. ${recessoContractNumber}`,
+        url: uri.uri,
+        dialogTitle: 'Condividi PDF di recesso',
+      });
+    } catch (e) {
+      alert('Errore durante la generazione o condivisione del PDF.');
+    }
   };
 
   // ============ WELCOME SCREEN ============
@@ -1540,7 +1628,10 @@ Firma`;
           <button onClick={handleSendRecesso} className="w-full py-5 bg-blue-600 text-white font-black text-xl rounded-2xl shadow-lg flex items-center justify-center gap-3 active:scale-95 transition-all">
             <Send size={26} /> INVIA PEC
           </button>
-          <button onClick={goBack} className="w-full py-3 bg-gray-100 text-gray-600 font-bold text-lg rounded-2xl active:scale-95 transition-all">
+          <button onClick={handleShareRecessoPdf} className="w-full py-4 bg-gray-100 text-gray-700 font-bold text-lg rounded-2xl flex items-center justify-center gap-3 active:scale-95 transition-all">
+            <FileText size={24} /> Scarica PDF
+          </button>
+          <button onClick={goBack} className="w-full py-3 text-gray-400 font-bold text-lg rounded-2xl active:scale-95 transition-all">
             Modifica
           </button>
         </div>
