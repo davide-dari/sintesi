@@ -37,7 +37,12 @@ import { AppData, Medicine, DAYS_OF_WEEK } from './types';
 import { jsPDF } from 'jspdf';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
-import { CapacitorHttp } from '@capacitor/core';
+import { CapacitorHttp, registerPlugin } from '@capacitor/core';
+
+interface ApkInstallerPlugin {
+  install: (options: { filePath: string }) => Promise<{ success: boolean }>;
+}
+const ApkInstaller = registerPlugin<ApkInstallerPlugin>('ApkInstaller');
 import { PROVIDERS, CATEGORIES, getProvider } from './data/providers';
 import { Provider, ProviderCategory } from './data/providers';
 import { getFormOverlay, hasOverlay } from './data/formOverlays';
@@ -114,6 +119,7 @@ const App: React.FC = () => {
   const [backupMode, setBackupMode] = useState<BackupMode>('none');
   const [importText, setImportText] = useState('');
   const [copySuccess, setCopySuccess] = useState(false);
+  const [updateDownloading, setUpdateDownloading] = useState(false);
 
   const medsEndRef = useRef<HTMLDivElement>(null);
   const historyInitialized = useRef(false);
@@ -212,6 +218,36 @@ const App: React.FC = () => {
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
+
+  const handleUpdateInstall = async () => {
+    if (!updateInfo || updateDownloading) return;
+    setUpdateDownloading(true);
+    try {
+      const res = await CapacitorHttp.get({
+        url: updateInfo.downloadUrl,
+        responseType: 'arraybuffer',
+        connectTimeout: 30000,
+        readTimeout: 120000,
+      });
+      const b64 = res.data;
+      if (typeof b64 !== 'string' || b64.length === 0) {
+        alert('Download dell\'aggiornamento non riuscito.');
+        setUpdateDownloading(false);
+        return;
+      }
+      const fileName = 'sintesi-update.apk';
+      await Filesystem.writeFile({ path: fileName, data: b64, directory: Directory.Cache });
+      const { uri } = await Filesystem.getUri({ path: fileName, directory: Directory.Cache });
+      const filePath = uri.replace(/^file:\/\//, '');
+      await ApkInstaller.install({ filePath });
+    } catch (e) {
+      console.warn('In-app install failed', e);
+      alert('Impossibile installare l\'aggiornamento automaticamente. Apertura del download manuale...');
+      window.open(updateInfo.downloadUrl, '_blank');
+    } finally {
+      setUpdateDownloading(false);
+    }
+  };
 
   const renderScreen = () => {
     if (!loaded) return (
@@ -1942,14 +1978,13 @@ Firma`;
               >
                 Salta
               </button>
-              <a
-                href={updateInfo.downloadUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="flex-1 bg-teal-600 text-white py-4 rounded-2xl font-bold text-lg text-center active:scale-95 transition-transform flex items-center justify-center gap-2"
+              <button
+                onClick={handleUpdateInstall}
+                disabled={updateDownloading}
+                className="flex-1 bg-teal-600 text-white py-4 rounded-2xl font-bold text-lg text-center active:scale-95 transition-transform flex items-center justify-center gap-2 disabled:opacity-60"
               >
-                <Download size={22} /> Aggiorna
-              </a>
+                <Download size={22} /> {updateDownloading ? 'Download...' : 'Aggiorna'}
+              </button>
             </div>
           </div>
         </div>
