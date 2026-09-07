@@ -117,10 +117,43 @@ const App: React.FC = () => {
   const historyInitialized = useRef(false);
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const recessoTempFiles = useRef<string[]>([]);
+
+  const deleteRecessoTempFiles = async () => {
+    const files = recessoTempFiles.current;
+    recessoTempFiles.current = [];
+    for (const f of files) {
+      try {
+        await Filesystem.deleteFile({ path: f, directory: Directory.Cache });
+      } catch (e) {
+        // best effort
+      }
+    }
+  };
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const { files } = await Filesystem.readdir({ path: '', directory: Directory.Cache });
+        for (const f of files) {
+          if (f.name.startsWith('sintesi_recesso_')) {
+            try {
+              await Filesystem.deleteFile({ path: f.name, directory: Directory.Cache });
+            } catch (e) {
+              // best effort
+            }
+          }
+        }
+      } catch (e) {
+        // best effort
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     return () => {
       if (successTimerRef.current) clearTimeout(successTimerRef.current);
+      deleteRecessoTempFiles();
     };
   }, []);
 
@@ -415,6 +448,7 @@ const App: React.FC = () => {
   const RECESSO_CONTRACT_TYPES = ['Telefonia', 'Internet', 'Luce', 'Gas', 'Assicurazione', 'Abbonamento', 'Locazione', 'Altro'];
 
   const resetRecessoWizard = () => {
+    deleteRecessoTempFiles();
     setRecessoStep(0);
     setRecessoProviderId(null);
     setRecessoManual(false);
@@ -522,29 +556,20 @@ Firma`;
   };
 
   const handleRecessoStepBack = () => {
-    if (recessoStep === 0) goBack();
-    else setRecessoStep(recessoStep - 1);
-  };
-
-  const handleSaveRecessoUser = () => {
-    updateField('user', {
-      ...data.user,
-      address: recessoUserAddress,
-      cap: recessoUserCap,
-      city: recessoUserCity,
-      province: recessoUserProvince,
-      fiscalCode: recessoUserCF,
-    });
+    if (recessoStep === 0) {
+      resetRecessoWizard();
+      goBack();
+    } else setRecessoStep(recessoStep - 1);
   };
 
   const handleSendRecesso = () => {
-    handleSaveRecessoUser();
     window.location.href = generateRecessoMailto();
     setShowRecessoSuccess(true);
     if (successTimerRef.current) clearTimeout(successTimerRef.current);
     successTimerRef.current = setTimeout(() => {
       if (currentScreen === Screen.RECESSO_PREVIEW) {
         setShowRecessoSuccess(false);
+        resetRecessoWizard();
         window.history.replaceState({ screen: Screen.HOME }, '');
         setCurrentScreen(Screen.HOME);
       }
@@ -616,7 +641,7 @@ Firma`;
     left(fullName, 12, 'bold');
     left('Firma', 11);
 
-    const fileName = `Recesso_${recessoCompanyName.replace(/[^a-zA-Z0-9]+/g, '_')}_${recessoContractNumber.replace(/[^a-zA-Z0-9]+/g, '_')}.pdf`;
+    const fileName = `sintesi_recesso_${Date.now()}_dichiarazione.pdf`;
     const base64 = doc.output('datauristring').split(',')[1];
 
     try {
@@ -625,6 +650,7 @@ Firma`;
         data: base64,
         directory: Directory.Cache,
       });
+      recessoTempFiles.current.push(fileName);
       const uri = await Filesystem.getUri({ path: fileName, directory: Directory.Cache });
       await Share.share({
         title: 'Dichiarazione di Recesso',
@@ -632,6 +658,7 @@ Firma`;
         url: uri.uri,
         dialogTitle: 'Condividi PDF di recesso',
       });
+      await deleteRecessoTempFiles();
     } catch (e) {
       alert('Errore durante la generazione o condivisione del PDF.');
     }
@@ -675,8 +702,9 @@ Firma`;
           console.warn('Overlay fill failed, sharing original', e);
         }
       }
-      const fileName = `Modulo_${provider.name.replace(/[^a-zA-Z0-9]+/g, '_')}.pdf`;
+      const fileName = `sintesi_recesso_${Date.now()}_${provider.name.replace(/[^a-zA-Z0-9]+/g, '_')}.pdf`;
       await Filesystem.writeFile({ path: fileName, data: base64, directory: Directory.Cache });
+      recessoTempFiles.current.push(fileName);
       const uri = await Filesystem.getUri({ path: fileName, directory: Directory.Cache });
       await Share.share({
         title: filled ? `Modulo compilato - ${provider.name}` : `Modulo di recesso - ${provider.name}`,
@@ -684,6 +712,7 @@ Firma`;
         url: uri.uri,
         dialogTitle: 'Condividi modulo ufficiale',
       });
+      await deleteRecessoTempFiles();
     } catch (e) {
       alert('Impossibile scaricare il modulo. Verifica la connessione o usa il pulsante "Apri sul sito".');
     }
@@ -1734,7 +1763,7 @@ Firma`;
     }
 
     return (
-      <ScreenLayout title={title} subtitle={subtitle} headerAction={<button onClick={goBack} className="bg-gray-100 p-2 rounded-full"><X size={24} /></button>}>
+      <ScreenLayout title={title} subtitle={subtitle} headerAction={<button onClick={() => { resetRecessoWizard(); goBack(); }} className="bg-gray-100 p-2 rounded-full"><X size={24} /></button>}>
         {content}
         <NavigationBar onBack={handleRecessoStepBack} onNext={recessoStep === 0 ? undefined : handleRecessoStepNext} nextLabel={isLast ? 'Anteprima' : undefined} />
       </ScreenLayout>
@@ -1765,7 +1794,7 @@ Firma`;
         <div className="bg-blue-700 text-white rounded-b-[3rem] shadow-lg pt-8 pb-10 flex flex-col px-6 shrink-0 z-10">
           <div className="flex justify-between items-center mb-4">
             <h1 className="text-2xl font-black">Anteprima</h1>
-            <button onClick={goBack} className="bg-white/20 p-2 rounded-full"><X size={24} /></button>
+            <button onClick={() => { resetRecessoWizard(); goBack(); }} className="bg-white/20 p-2 rounded-full"><X size={24} /></button>
           </div>
           <p className="text-blue-200 font-medium text-base">Rivedi prima di inviare</p>
         </div>
