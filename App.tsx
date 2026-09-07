@@ -43,6 +43,7 @@ import { Provider, ProviderCategory } from './data/providers';
 import { getFormOverlay, hasOverlay } from './data/formOverlays';
 import { fillOfficialModule } from './services/moduloFiller';
 import { getExtrasForProvider, ExtraField } from './data/formExtras';
+import { detectModuleFields, ModuleField } from './services/moduleReader';
 
 enum Screen {
   WELCOME,
@@ -103,6 +104,7 @@ const App: React.FC = () => {
   const [recessoPod, setRecessoPod] = useState('');
   const [recessoExtras, setRecessoExtras] = useState<Record<string, string>>({});
   const [recessoSignature, setRecessoSignature] = useState<string | null>(null);
+  const [detectedFields, setDetectedFields] = useState<ModuleField[]>([]);
   const [showRecessoSuccess, setShowRecessoSuccess] = useState(false);
 
   const [showStudioDetails, setShowStudioDetails] = useState(false);
@@ -118,6 +120,7 @@ const App: React.FC = () => {
   const successTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const recessoTempFiles = useRef<string[]>([]);
+  const modulePdfBase64Ref = useRef<{ providerId: string; base64: string } | null>(null);
 
   const deleteRecessoTempFiles = async () => {
     const files = recessoTempFiles.current;
@@ -469,6 +472,8 @@ const App: React.FC = () => {
     setRecessoPod('');
     setRecessoExtras({});
     setRecessoSignature(null);
+    setDetectedFields([]);
+    modulePdfBase64Ref.current = null;
   };
 
   const selectRecessoProvider = (p: Provider) => {
@@ -479,6 +484,30 @@ const App: React.FC = () => {
     setRecessoCompanyPec(p.pec || '');
     if (!recessoContractType && p.contractTypes.length > 0) setRecessoContractType(p.contractTypes[0]);
     setRecessoStep(1);
+    loadDetectedFields(p);
+  };
+
+  const loadDetectedFields = async (p: Provider) => {
+    if (!p.moduloPdfUrl) {
+      setDetectedFields([]);
+      modulePdfBase64Ref.current = null;
+      return;
+    }
+    try {
+      const res = await CapacitorHttp.get({
+        url: p.moduloPdfUrl,
+        responseType: 'arraybuffer',
+        connectTimeout: 30000,
+        readTimeout: 60000,
+      });
+      const b64 = res.data;
+      if (typeof b64 !== 'string' || b64.length === 0) return;
+      modulePdfBase64Ref.current = { providerId: p.id, base64: b64 };
+      const fields = await detectModuleFields(b64);
+      setDetectedFields(fields);
+    } catch (e) {
+      console.warn('Module reading failed', e);
+    }
   };
 
   const selectRecessoManual = () => {
@@ -667,18 +696,23 @@ Firma`;
 
   const handleDownloadModuloPdf = async (url: string, provider: Provider) => {
     try {
-      const res = await CapacitorHttp.get({
-        url,
-        responseType: 'arraybuffer',
-        connectTimeout: 30000,
-        readTimeout: 60000,
-      });
-      const resData = res.data;
-      if (typeof resData !== 'string' || resData.length === 0) {
-        alert('Download non riuscito. Il modulo potrebbe non essere più disponibile.');
-        return;
+      let base64: string | undefined;
+      if (modulePdfBase64Ref.current?.providerId === provider.id) {
+        base64 = modulePdfBase64Ref.current.base64;
+      } else {
+        const res = await CapacitorHttp.get({
+          url,
+          responseType: 'arraybuffer',
+          connectTimeout: 30000,
+          readTimeout: 60000,
+        });
+        const resData = res.data;
+        if (typeof resData !== 'string' || resData.length === 0) {
+          alert('Download non riuscito. Il modulo potrebbe non essere più disponibile.');
+          return;
+        }
+        base64 = resData;
       }
-      let base64 = resData;
       let filled = false;
       const overlay = getFormOverlay(provider.id);
       if (overlay) {
@@ -697,7 +731,7 @@ Firma`;
             date: new Date().toLocaleDateString('it-IT'),
             extras: recessoExtras,
             signatureDataUrl: recessoSignature,
-          });
+          }, detectedFields);
           filled = true;
         } catch (e) {
           console.warn('Overlay fill failed, sharing original', e);
@@ -1734,6 +1768,10 @@ Firma`;
         title = 'I tuoi dati';
         subtitle = 'Dati per il recesso (se non già inseriti)';
         const extraFields = getExtrasForProvider(recessoProviderId);
+        const detectedExtras: ExtraField[] = detectedFields
+          .filter(d => !extraFields.some(e => e.key === d.key))
+          .map(d => ({ key: d.key, label: d.label, type: d.type }));
+        const allExtraFields = [...extraFields, ...detectedExtras];
         content = (
           <div className="flex flex-col gap-4 pb-20 animate-fade-in overflow-y-auto pt-2 no-scrollbar">
             <Input label="Indirizzo" placeholder="Via Roma 10" value={recessoUserAddress} onChange={e => setRecessoUserAddress(capitalize(e.target.value))} />
@@ -1748,11 +1786,11 @@ Firma`;
             {(recessoContractType === 'Luce' || recessoContractType === 'Gas') && (
               <Input label={`Numero ${recessoContractType === 'Luce' ? 'POD' : 'PDR'} (se disponibile)`} placeholder={recessoContractType === 'Luce' ? 'IT001E...' : 'IT...'} value={recessoPod} onChange={e => setRecessoPod(e.target.value.toUpperCase())} />
             )}
-            {extraFields.length > 0 && (
+            {allExtraFields.length > 0 && (
               <div className="mt-2">
                 <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2">Richiesti dal modulo ufficiale</p>
                 <div className="flex flex-col gap-3">
-                  {extraFields.map(f => (
+                  {allExtraFields.map(f => (
                     <Input key={f.key} label={f.label} type={f.type === 'date' ? 'date' : (f.type === 'email' ? 'email' : f.type === 'tel' ? 'tel' : 'text')} placeholder={f.placeholder} value={recessoExtras[f.key] || ''} onChange={e => setRecessoExtras(prev => ({ ...prev, [f.key]: e.target.value }))} />
                   ))}
                 </div>

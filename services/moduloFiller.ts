@@ -1,5 +1,6 @@
 import { PDFDocument, PDFFont, StandardFonts, rgb } from 'pdf-lib';
 import { FormOverlay, OverlayField } from '../data/formOverlays';
+import { ModuleField } from './moduleReader';
 
 export interface OverlayData {
   fullName: string;
@@ -63,6 +64,7 @@ export async function fillOfficialModule(
   base64: string,
   overlay: FormOverlay,
   data: OverlayData,
+  detectedFields?: ModuleField[],
 ): Promise<string> {
   const doc = await PDFDocument.load(base64ToBytes(base64), { ignoreEncryption: true });
   const font = await doc.embedFont(StandardFonts.Helvetica);
@@ -72,6 +74,10 @@ export async function fillOfficialModule(
   const signatureImg = signaturePng && signaturePng.length > 0
     ? await doc.embedPng(signaturePng)
     : null;
+
+  const staticExtraKeys = new Set(
+    overlay.fields.filter(f => f.type === 'extra' && f.extraKey).map(f => f.extraKey),
+  );
 
   for (const f of overlay.fields) {
     const value = getValue(f, data);
@@ -99,6 +105,23 @@ export async function fillOfficialModule(
         font,
         color: rgb(0, 0, 0),
         maxWidth: f.maxWidth || 380,
+      });
+    }
+  }
+
+  if (detectedFields) {
+    for (const d of detectedFields) {
+      if (staticExtraKeys.has(d.key)) continue;
+      const value = data.extras[d.key];
+      if (!value || !value.trim()) continue;
+      const page = doc.getPage(d.page - 1);
+      page.drawText(value, {
+        x: d.x,
+        y: d.y,
+        size: d.size,
+        font,
+        color: rgb(0, 0, 0),
+        maxWidth: 220,
       });
     }
   }
