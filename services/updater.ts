@@ -1,8 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { APP_VERSION } from '../types';
 
 const SKIP_KEY = 'sintesi_update_skip';
-const CHECK_INTERVAL = 6 * 60 * 60 * 1000;
+const MIN_CHECK_GAP = 60 * 1000;
 
 interface SkipInfo {
   version: string;
@@ -59,8 +59,12 @@ function compareVersions(a: string, b: string): number {
 export const useUpdateChecker = () => {
   const [updateInfo, setUpdateInfo] = useState<UpdateInfo | null>(null);
   const [dismissed, setDismissed] = useState(false);
+  const lastCheckRef = useRef(0);
 
   const checkForUpdate = useCallback(async () => {
+    const now = Date.now();
+    if (now - lastCheckRef.current < MIN_CHECK_GAP) return;
+    lastCheckRef.current = now;
     try {
       const res = await fetch(
         'https://api.github.com/repos/davide-dari/sintesi/releases/latest',
@@ -92,8 +96,16 @@ export const useUpdateChecker = () => {
 
   useEffect(() => {
     checkForUpdate();
-    const interval = setInterval(checkForUpdate, CHECK_INTERVAL);
-    return () => clearInterval(interval);
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') checkForUpdate();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+    const onFocus = () => checkForUpdate();
+    window.addEventListener('focus', onFocus);
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('focus', onFocus);
+    };
   }, [checkForUpdate]);
 
   const dismissUpdate = (version: string) => {
