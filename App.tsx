@@ -210,7 +210,8 @@ const App: React.FC = () => {
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  if (!loaded) return (
+  const renderScreen = () => {
+    if (!loaded) return (
     <div className="h-[100dvh] flex items-center justify-center bg-teal-50">
       <div className="text-teal-700 text-2xl font-bold">Caricamento...</div>
     </div>
@@ -1877,8 +1878,11 @@ Firma`;
     );
   }
 
+  };
+
   return (
     <>
+      {renderScreen()}
       {updateInfo && (
         <div className="fixed inset-0 bg-black/60 z-[200] flex items-center justify-center p-6 animate-fade-in backdrop-blur-sm">
           <div className="bg-white w-full max-w-sm rounded-3xl p-6 shadow-2xl relative animate-slide-up">
