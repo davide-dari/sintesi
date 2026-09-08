@@ -1,8 +1,3 @@
-import * as pdfjs from 'pdfjs-dist';
-import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(workerUrl, window.location.href).toString();
-
 export interface ModuleField {
   key: string;
   label: string;
@@ -65,8 +60,35 @@ interface Line {
   page: number;
 }
 
+let pdfjsPromise: Promise<any> | null = null;
+
+async function loadPdfjs(): Promise<any> {
+  if (!pdfjsPromise) {
+    pdfjsPromise = (async () => {
+      const pdfjs = await import('pdfjs-dist');
+      try {
+        const workerMod = await import('pdfjs-dist/build/pdf.worker.min.mjs?url');
+        const workerUrl = (workerMod as any).default || (workerMod as any);
+        pdfjs.GlobalWorkerOptions.workerSrc = new URL(workerUrl, window.location.href).toString();
+      } catch (e) {
+        console.warn('Worker setup failed', e);
+      }
+      return pdfjs;
+    })();
+  }
+  return pdfjsPromise;
+}
+
 export async function detectModuleFields(base64: string): Promise<ModuleField[]> {
-  let doc: pdfjs.PDFDocumentProxy;
+  let pdfjs;
+  try {
+    pdfjs = await loadPdfjs();
+  } catch (e) {
+    console.warn('pdfjs load failed', e);
+    return [];
+  }
+
+  let doc: any;
   try {
     doc = await pdfjs.getDocument({ data: base64ToBytes(base64), disableFontFace: true }).promise;
   } catch (e) {
