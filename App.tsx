@@ -28,6 +28,8 @@ import {
   Smartphone,
   Database,
   FileText,
+  RefreshCw,
+  Loader2,
 } from 'lucide-react';
 import { useAppStorage } from './services/storage';
 import { useUpdateChecker } from './services/updater';
@@ -110,6 +112,8 @@ const App: React.FC = () => {
   const [recessoExtras, setRecessoExtras] = useState<Record<string, string>>({});
   const [recessoSignature, setRecessoSignature] = useState<string | null>(null);
   const [detectedFields, setDetectedFields] = useState<ModuleField[]>([]);
+  const [moduleScanning, setModuleScanning] = useState(false);
+  const [moduleScanError, setModuleScanError] = useState(false);
   const [showRecessoSuccess, setShowRecessoSuccess] = useState(false);
 
   const [showStudioDetails, setShowStudioDetails] = useState(false);
@@ -527,8 +531,11 @@ const App: React.FC = () => {
     if (!p.moduloPdfUrl) {
       setDetectedFields([]);
       modulePdfBase64Ref.current = null;
+      setModuleScanning(false);
       return;
     }
+    setModuleScanning(true);
+    setModuleScanError(false);
     try {
       const res = await CapacitorHttp.get({
         url: p.moduloPdfUrl,
@@ -537,12 +544,19 @@ const App: React.FC = () => {
         readTimeout: 60000,
       });
       const b64 = res.data;
-      if (typeof b64 !== 'string' || b64.length === 0) return;
+      if (typeof b64 !== 'string' || b64.length === 0) {
+        setModuleScanError(true);
+        return;
+      }
       modulePdfBase64Ref.current = { providerId: p.id, base64: b64 };
       const fields = await detectModuleFields(b64);
       setDetectedFields(fields);
+      setModuleScanError(fields.length === 0);
     } catch (e) {
       console.warn('Module reading failed', e);
+      setModuleScanError(true);
+    } finally {
+      setModuleScanning(false);
     }
   };
 
@@ -627,6 +641,18 @@ Firma`;
       goBack();
     } else setRecessoStep(recessoStep - 1);
   };
+
+  useEffect(() => {
+    if (currentScreen !== Screen.RECESSO_WIZARD) return;
+    const visible = getRecessoVisibleSteps();
+    const logical = visible[recessoStep];
+    if (logical === 7) {
+      const provider = recessoProviderId ? getProvider(recessoProviderId) : undefined;
+      if (provider?.moduloPdfUrl && modulePdfBase64Ref.current?.providerId !== provider.id && !moduleScanning) {
+        loadDetectedFields(provider);
+      }
+    }
+  }, [currentScreen, recessoStep, recessoProviderId, moduleScanning]);
 
   const handleSendRecesso = () => {
     window.location.href = generateRecessoMailto();
@@ -1803,8 +1829,32 @@ Firma`;
       case 7:
         title = 'I tuoi dati';
         subtitle = 'Dati per il recesso (se non già inseriti)';
+        const dataProvider = recessoProviderId ? getProvider(recessoProviderId) : undefined;
+        const hasModule = !!dataProvider?.moduloPdfUrl;
         const extraFields = getExtrasForProvider(recessoProviderId);
+
+        const standardKeys = ['firstName', 'lastName', 'fullName', 'cf', 'address', 'cap', 'city', 'province', 'contractNumber'];
+        const detectedStandard = detectedFields
+          .filter(d => standardKeys.includes(d.key))
+          .map(d => {
+            let value = '';
+            switch (d.key) {
+              case 'firstName': value = data.user.firstName; break;
+              case 'lastName': value = data.user.lastName; break;
+              case 'fullName': value = `${data.user.firstName} ${data.user.lastName}`.trim(); break;
+              case 'cf': value = recessoUserCF || data.user.fiscalCode || ''; break;
+              case 'address': value = recessoUserAddress || data.user.address || ''; break;
+              case 'cap': value = recessoUserCap || data.user.cap || ''; break;
+              case 'city': value = recessoUserCity || data.user.city || ''; break;
+              case 'province': value = recessoUserProvince || data.user.province || ''; break;
+              case 'contractNumber': value = recessoContractNumber; break;
+            }
+            return { label: d.label, value };
+          })
+          .filter(d => d.value);
+
         const detectedExtras: ExtraField[] = detectedFields
+          .filter(d => !standardKeys.includes(d.key))
           .filter(d => !extraFields.some(e => e.key === d.key))
           .map(d => ({ key: d.key, label: d.label, type: d.type }));
         const allExtraFields = [...extraFields, ...detectedExtras];
@@ -1822,7 +1872,52 @@ Firma`;
             {(recessoContractType === 'Luce' || recessoContractType === 'Gas') && (
               <Input label={`Numero ${recessoContractType === 'Luce' ? 'POD' : 'PDR'} (se disponibile)`} placeholder={recessoContractType === 'Luce' ? 'IT001E...' : 'IT...'} value={recessoPod} onChange={e => setRecessoPod(e.target.value.toUpperCase())} />
             )}
-            {allExtraFields.length > 0 && (
+            {hasModule ? (
+              <div className="mt-2">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-sm font-bold text-gray-400 uppercase tracking-widest">Campi del modulo</p>
+                  {!moduleScanning && (
+                    <button onClick={() => dataProvider && loadDetectedFields(dataProvider)} className="flex items-center gap-1 text-xs font-bold text-blue-600 px-2 py-1 rounded-lg bg-blue-50 active:scale-95 transition-all">
+                      <RefreshCw size={13} /> Ri-analizza
+                    </button>
+                  )}
+                </div>
+                {moduleScanning ? (
+                  <div className="bg-white border-2 border-blue-100 rounded-2xl p-5 flex items-center gap-3">
+                    <Loader2 size={22} className="text-blue-600 animate-spin" />
+                    <p className="text-blue-700 font-medium text-sm">Analizzo il modulo di {dataProvider?.name}...</p>
+                  </div>
+                ) : moduleScanError ? (
+                  <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
+                    <p className="text-sm text-amber-700 font-medium">Non riesco a leggere il modulo. Inserisci i campi manualmente o riprova.</p>
+                    <button onClick={() => dataProvider && loadDetectedFields(dataProvider)} className="mt-2 flex items-center gap-1 text-sm font-bold text-amber-700 px-3 py-1.5 rounded-lg bg-amber-100 active:scale-95 transition-all">
+                      <RefreshCw size={14} /> Riprova
+                    </button>
+                  </div>
+                ) : (
+                  <>
+                    {detectedStandard.length > 0 && (
+                      <div className="bg-white border-2 border-gray-100 rounded-2xl p-4 flex flex-col gap-2.5 mb-3">
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Presenti nel modulo (auto-compilati)</p>
+                        {detectedStandard.map(d => (
+                          <div key={d.label} className="flex items-center justify-between gap-2">
+                            <span className="text-sm text-gray-500 font-medium">{d.label}</span>
+                            <span className="text-sm font-bold text-gray-800 flex items-center gap-1.5"><CheckCircle2 size={15} className="text-green-500" /> {d.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {allExtraFields.length > 0 && (
+                      <div className="flex flex-col gap-3">
+                        {allExtraFields.map(f => (
+                          <Input key={f.key} label={f.label} type={f.type === 'date' ? 'date' : (f.type === 'email' ? 'email' : f.type === 'tel' ? 'tel' : 'text')} placeholder={f.placeholder} value={recessoExtras[f.key] || ''} onChange={e => setRecessoExtras(prev => ({ ...prev, [f.key]: e.target.value }))} />
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            ) : allExtraFields.length > 0 && (
               <div className="mt-2">
                 <p className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-2">Richiesti dal modulo ufficiale</p>
                 <div className="flex flex-col gap-3">

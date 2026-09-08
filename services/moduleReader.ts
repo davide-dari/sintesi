@@ -1,7 +1,7 @@
 import * as pdfjs from 'pdfjs-dist';
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 
-pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(workerUrl, window.location.href).toString();
 
 export interface ModuleField {
   key: string;
@@ -21,15 +21,24 @@ interface Rule {
 }
 
 const CLIENT_RULES: Rule[] = [
+  { key: 'fullName', re: /NOME E COGNOME|sottoscritto|Sottoscritto/, type: 'text', label: 'Nome e cognome' },
+  { key: 'firstName', re: /^\s*NOME\b/, type: 'text', label: 'Nome' },
+  { key: 'lastName', re: /^\s*COGNOME\b/, type: 'text', label: 'Cognome' },
+  { key: 'cf', re: /CODICE FISCALE|C\.F\.|CODICE FISCALE\/P/, type: 'text', label: 'Codice Fiscale' },
   { key: 'birthDate', re: /DATA DI NASCITA|NATO A.*\bIL\b|\bIL\b.*\bCODICE FISCALE/, type: 'date', label: 'Data di nascita' },
   { key: 'birthPlace', re: /NATO A|Nato a/, type: 'text', label: 'Luogo di nascita' },
+  { key: 'address', re: /INDIRIZZO|RESIDENZA|VIA, PIAZZA|Indirizzo di Residenza|Indirizzo/, type: 'text', label: 'Indirizzo' },
+  { key: 'addressNumber', re: /NUMERO CIVICO|\bN°\b|Numero:|NUMERO:/, type: 'text', label: 'Numero civico' },
+  { key: 'city', re: /LOCALITÀ|CITTÀ|COMUNE|Località|Comune/, type: 'text', label: 'Città' },
+  { key: 'cap', re: /\bCAP\b/, type: 'text', label: 'CAP' },
+  { key: 'province', re: /\bPROV\b|PROVINCIA/, type: 'text', label: 'Provincia' },
+  { key: 'contractNumber', re: /NUMERO DEL TITOLARE|la cessazione del numero|Numero del Titolare|ID ORDINE|ID Utente|CODICE CLIENTE|Numero plico|Numero di linea|Numero del Cliente/, type: 'text', label: 'Numero contratto/linea' },
   { key: 'idType', re: /TIPO.*DOCUMENTO|DOCUMENTO.*TIPO|Tipo Documento/, type: 'text', label: 'Tipo documento' },
   { key: 'idNumber', re: /NUMERO DOCUMENTO|NUMERO:/, type: 'text', label: 'Numero documento' },
   { key: 'iban', re: /\bIBAN\b/, type: 'text', label: 'IBAN' },
   { key: 'motivo', re: /MOTIVAZIONE|Motivazione/, type: 'text', label: 'Motivazione del recesso' },
-  { key: 'phone', re: /RECAPITO TELEFONICO|TELEFONO|CELLULARE|RECAPITO/, type: 'tel', label: 'Recapito telefonico' },
+  { key: 'phone', re: /RECAPITO TELEFONICO|RECAPITO|TELEFONO|CELLULARE/, type: 'tel', label: 'Recapito telefonico' },
   { key: 'email', re: /E-MAIL|E-mail|EMAIL/, type: 'email', label: 'E-mail' },
-  { key: 'addressNumber', re: /NUMERO CIVICO|\bN°\b|Numero:|NUMERO:/, type: 'text', label: 'Numero civico' },
 ];
 
 const LEGAL_REP_RULES: Rule[] = [
@@ -39,7 +48,7 @@ const LEGAL_REP_RULES: Rule[] = [
   { key: 'legalRepRecapito', re: /RECAPITO/, type: 'tel', label: 'Legale rappresentante - Recapito' },
 ];
 
-const RESET_RE = /DICHIARA|CHIEDE|COMUNICA|dichiara|chiede|comunica|In quanto|in quanto|La presente richiesta|Il presente modulo|Per conoscere|Ai sensi/;
+const RESET_RE = /DICHIARA|CHIEDE|COMUNICA|dichiara|chiede|comunica|In quanto|in quanto|La presente richiesta|Il presente modulo|Per conoscere|Ai sensi|E RICHIEDE|CONFERMA/;
 
 function base64ToBytes(base64: string): Uint8Array {
   const binary = atob(base64);
@@ -61,12 +70,18 @@ export async function detectModuleFields(base64: string): Promise<ModuleField[]>
   try {
     doc = await pdfjs.getDocument({ data: base64ToBytes(base64), disableFontFace: true }).promise;
   } catch (e) {
+    console.warn('Module read error', e);
     return [];
   }
 
   const lines: Line[] = [];
   for (let p = 1; p <= doc.numPages; p++) {
-    const page = await doc.getPage(p);
+    let page;
+    try {
+      page = await doc.getPage(p);
+    } catch {
+      continue;
+    }
     const tc = await page.getTextContent();
     const grouped = new Map<string, Line>();
     for (const item of tc.items as any[]) {
@@ -106,8 +121,9 @@ export async function detectModuleFields(base64: string): Promise<ModuleField[]>
     for (const rule of rules) {
       if (!rule.re.test(text)) continue;
       if (seen.has(rule.key)) break;
-      const approxLabelChars = text.length;
-      const valueX = line.x + Math.min(approxLabelChars, 90) * line.size * 0.55;
+      const m = rule.re.exec(text);
+      const labelEnd = m ? m[0].length : Math.min(text.length, 60);
+      const valueX = line.x + labelEnd * line.size * 0.55;
       fields.push({
         key: rule.key,
         label: rule.label,

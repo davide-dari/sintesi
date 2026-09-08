@@ -78,6 +78,9 @@ export async function fillOfficialModule(
   const staticExtraKeys = new Set(
     overlay.fields.filter(f => f.type === 'extra' && f.extraKey).map(f => f.extraKey),
   );
+  const standardFieldKeys = new Set([
+    'fullName', 'firstName', 'lastName', 'cf', 'address', 'cap', 'city', 'province', 'contractNumber', 'date',
+  ]);
 
   for (const f of overlay.fields) {
     const value = getValue(f, data);
@@ -111,7 +114,7 @@ export async function fillOfficialModule(
 
   if (detectedFields) {
     for (const d of detectedFields) {
-      if (staticExtraKeys.has(d.key)) continue;
+      if (staticExtraKeys.has(d.key) || standardFieldKeys.has(d.key)) continue;
       const value = data.extras[d.key];
       if (!value || !value.trim()) continue;
       const page = doc.getPage(d.page - 1);
