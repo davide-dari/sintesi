@@ -642,18 +642,6 @@ Firma`;
     } else setRecessoStep(recessoStep - 1);
   };
 
-  useEffect(() => {
-    if (currentScreen !== Screen.RECESSO_WIZARD) return;
-    const visible = getRecessoVisibleSteps();
-    const logical = visible[recessoStep];
-    if (logical === 7) {
-      const provider = recessoProviderId ? getProvider(recessoProviderId) : undefined;
-      if (provider?.moduloPdfUrl && modulePdfBase64Ref.current?.providerId !== provider.id && !moduleScanning) {
-        loadDetectedFields(provider);
-      }
-    }
-  }, [currentScreen, recessoStep, recessoProviderId, moduleScanning]);
-
   const handleSendRecesso = () => {
     window.location.href = generateRecessoMailto();
     setShowRecessoSuccess(true);
